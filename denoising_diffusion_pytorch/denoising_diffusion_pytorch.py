@@ -1342,7 +1342,7 @@ class TrainerSegmentation(TrainerBase):
     ):
         # Convert to grayscale and threshold the image
         predicted = predicted.mean(0)
-        predicted = (predicted >= threshold).float
+        predicted = (predicted >= threshold).float()
 
         eval_dict = {key: value for (key, value) in image_info.items() if value}
         for metric in metrics:
