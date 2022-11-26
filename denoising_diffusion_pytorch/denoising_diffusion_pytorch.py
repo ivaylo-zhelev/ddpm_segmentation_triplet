@@ -1314,7 +1314,6 @@ class TrainerSegmentation(TrainerBase):
         data_loader = self.accelerator.prepare(data_loader)
         data_loader = cycle(data_loader)
 
-        batch_num = 0
         total_batches = ceil(len(dataset) / batch_size)
         for batch_num in tqdm(range(total_batches), desc=f"Total number of batches: {total_batches}"):
             batch = next(data_loader).to(self.accelerator.device)
