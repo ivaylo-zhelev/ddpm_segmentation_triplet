@@ -1321,7 +1321,6 @@ class TrainerSegmentation(TrainerBase):
     def infer_image(self, image_path, results_path):
         image = Image.open(image_path)
         transform = T.Compose([
-            T.Lambda(maybe_convert_fn),
             T.Resize(image_size),
             T.RandomHorizontalFlip() if augment_horizontal_flip else nn.Identity(),
             T.CenterCrop(image_size),
