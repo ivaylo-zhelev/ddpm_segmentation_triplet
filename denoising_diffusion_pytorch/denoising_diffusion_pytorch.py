@@ -1198,7 +1198,7 @@ class TrainerSegmentation(TrainerBase):
         self.accelerator.print(f"Testing...")
         eval_results = DataFrame()
         device = self.accelerator.device
-        for _ in tqdm(range(test_steps, desc = "Testing progress:")):
+        for _ in tqdm(range(test_steps), desc = "Testing progress:"):
             data = next(self.test_dl).to(device)
             imgs, gt_segm = torch.unbind(data, dim=1)
 
