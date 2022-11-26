@@ -1322,8 +1322,7 @@ class TrainerSegmentation(TrainerBase):
         image = Image.open(image_path)
         transform = T.Compose([
             T.Resize(image_size),
-            T.RandomHorizontalFlip() if augment_horizontal_flip else nn.Identity(),
-            T.CenterCrop(image_size),
+            T.CenterCrop(self.image_size),
             T.ToTensor()
         ])
 
