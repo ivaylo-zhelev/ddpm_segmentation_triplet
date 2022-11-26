@@ -1301,10 +1301,12 @@ class TrainerSegmentation(TrainerBase):
         results_path = Path(results_path)
         results_path.mkdir(exist_ok=True, parents=True)
 
+        batch_size = batch_size or self.batch_size
+
         dataset = Dataset(folder_path, image_size or self.image_size, exts)
         data_loader = DataLoader(
             dataset,
-            batch_size=batch_size or self.batch_size,
+            batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
             num_workers=cpu_count())
@@ -1313,7 +1315,7 @@ class TrainerSegmentation(TrainerBase):
         data_loader = cycle(data_loader)
 
         batch_num = 0
-        total_batches = ceil(len(dataset) / batch_size or self.batch_size)
+        total_batches = ceil(len(dataset) / batch_size)
         with tqdm(initial=batch_num, total = total_batches, disable = not self.accelerator.is_main_process) as pbar:
             for batch_num in range(total_batches):
                 batch = next(data_loader).to(self.accelerator.device)
