@@ -23,6 +23,7 @@ setup(
     'pandas',
     'pillow',
     'torch',
+    'torchmetrics',
     'torchvision',
     'tqdm'
   ],
