@@ -1290,7 +1290,7 @@ class TrainerSegmentation(TrainerBase):
                 eval_results = eval_results.append(
                     self.evaluate(
                         predicted=segmentation,
-                        ground_truth=ground_truth_segmentation,
+                        ground_truth=ground_truth,
                         image_info=image_info,
                         metrics=eval_metrics,
                         index=ind,
