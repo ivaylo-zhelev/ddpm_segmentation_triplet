@@ -1011,7 +1011,7 @@ class TrainerBase():
         training_loss_df = DataFrame(
             data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()],
             index=list(range(len(self.train_loss_dict))))
-        vakudation_loss_df = DataFrame(
+        validation_loss_df = DataFrame(
             data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()],
             index=list(range(len(self.train_loss_dict))))
 
