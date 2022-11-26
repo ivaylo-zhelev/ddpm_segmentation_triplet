@@ -1316,6 +1316,13 @@ class TrainerSegmentation(TrainerBase):
                 eval_metrics = tuple()
             )
 
+    def infer_image(image_path, results_path):
+        image = Image.open(image_path)
+        image = torch.tensor([image])
+
+        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=image)
+        utils.save_image(segmentation, results_path)
+
     @staticmethod
     @torch.no_grad()
     def evaluate(
