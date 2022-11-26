@@ -1281,6 +1281,7 @@ class TrainerSegmentation(TrainerBase):
 
         return eval_results
 
+    @torch.no_grad()
     def infer_folder(
         self,
         folder_path,
@@ -1316,7 +1317,8 @@ class TrainerSegmentation(TrainerBase):
                 eval_metrics = tuple()
             )
 
-    def infer_image(image_path, results_path):
+    @torch.no_grad()
+    def infer_image(self, image_path, results_path):
         image = Image.open(image_path)
         image = torch.tensor([image])
 
