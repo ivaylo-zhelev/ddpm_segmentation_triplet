@@ -1322,7 +1322,15 @@ class TrainerSegmentation(TrainerBase):
         image = Image.open(image_path)
         image = torch.tensor([image])
 
-        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=image)
+        transform = T.Compose([
+            T.Lambda(maybe_convert_fn),
+            T.Resize(image_size),
+            T.RandomHorizontalFlip() if augment_horizontal_flip else nn.Identity(),
+            T.CenterCrop(image_size),
+            T.ToTensor()
+        ])
+
+        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=transform(image))
         utils.save_image(segmentation, results_path)
 
     @staticmethod
