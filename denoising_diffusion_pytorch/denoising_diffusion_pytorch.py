@@ -1359,8 +1359,9 @@ class TrainerSegmentation(TrainerBase):
         index = 0,
         threshold = 0.5
     ):
-        prediction = torch.unsqueeze(prediction, dim=0)
+        predicted = torch.unsqueeze(predicted, dim=0)
         ground_truth = torch.unsqueeze(ground_truth, dim=0)
+
         eval_dict = {key: value for (key, value) in image_info.items() if value}
         for metric in metrics:
             try:
