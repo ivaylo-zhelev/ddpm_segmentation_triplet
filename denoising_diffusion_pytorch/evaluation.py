@@ -5,9 +5,10 @@ DICE_METRIC = "Dice"
 SSIM_METRIC = "SSIM"
 
 def iou(predicted, ground_truth, threshold=0.5):
-    predicted = predicted >= threshold
     predicted = predicted.mean(1)
     ground_truth = ground_truth.mean(1)
+    predicted = predicted >= threshold
+    ground_truth = ground_truth >= threshold
 
     intersection = predicted.logical_and(ground_truth).sum()
     union = predicted.logical_or(ground_truth).sum()
