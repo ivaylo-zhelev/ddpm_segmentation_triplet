@@ -1325,10 +1325,9 @@ class TrainerSegmentation(TrainerBase):
             T.CenterCrop(self.image_size),
             T.ToTensor()
         ])
+        image = torch.unsqueeze(transform(image), dim=0).to(self.accelerator.device)
 
-        image = torch.tensor([transform(image)])
-
-        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=transform(image))
+        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=image)
         utils.save_image(segmentation, results_path)
 
     @staticmethod
