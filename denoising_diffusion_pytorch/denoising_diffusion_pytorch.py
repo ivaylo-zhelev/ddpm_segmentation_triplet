@@ -1316,19 +1316,15 @@ class TrainerSegmentation(TrainerBase):
 
         batch_num = 0
         total_batches = ceil(len(dataset) / batch_size)
-        with tqdm(initial=batch_num, total = total_batches) as pbar:    
-            pbar.set_description(f"Total number of batches: {total_batches}")
-            for batch_num in range(total_batches):
-                batch = next(data_loader).to(self.accelerator.device)
-                
-                self.infer_batch(
-                    batch,
-                    results_folder=results_path / GENERATED_FOLDER,
-                    original_image_folder=results_path / IMAGE_FOLDER,
-                    eval_metrics = tuple()
-                )
-
-
+        for batch_num in tqdm(range(total_batches), desc=f"Total number of batches: {total_batches}"):
+            batch = next(data_loader).to(self.accelerator.device)
+            
+            self.infer_batch(
+                batch,
+                results_folder=results_path / GENERATED_FOLDER,
+                original_image_folder=results_path / IMAGE_FOLDER,
+                eval_metrics = tuple()
+            )
 
     @staticmethod
     @torch.no_grad()
