@@ -946,6 +946,9 @@ class TrainerBase():
         self.train_num_steps = train_num_steps
         self.image_size = diffusion_model.image_size
 
+        self.train_loss_dict = {}
+        self.validation_loss_dict = {}
+
         self.train_lr = train_lr
         self.adam_betas = adam_betas
 
@@ -995,6 +998,8 @@ class TrainerBase():
 
         data = {
             'step': self.step,
+            'train_loss_dict': self.train_loss_dict,
+            'validation_loss_dict': self.validation_loss_dict,
             'model': self.accelerator.get_state_dict(self.model),
             'opt': self.opt.state_dict(),
             'ema': self.ema.state_dict(),
@@ -1002,6 +1007,12 @@ class TrainerBase():
         }
 
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
+
+        training_loss_df = DataFrame(self.train_loss_dict, index=[milestone])
+        validation_loss_df = DataFrame(self.validation_loss_dict, index=[milestone])
+
+        training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv'))
+        validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv'))
 
     def load(self, milestone):
         accelerator = self.accelerator
@@ -1013,6 +1024,8 @@ class TrainerBase():
         model.load_state_dict(data['model'])
 
         self.step = data['step']
+        self.train_loss_dict = data['train_loss_dict']
+        self.validation_loss_dict = data['validation_loss_dict']
         self.opt.load_state_dict(data['opt'])
         self.ema.load_state_dict(data['ema'])
 
@@ -1039,6 +1052,7 @@ class TrainerBase():
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
                 pbar.set_description(f'Training loss: {total_loss:.4f}')
+                self.train_loss_dict[self.step] = total_loss
 
                 accelerator.wait_for_everyone()
 
@@ -1174,6 +1188,7 @@ class TrainerSegmentation(TrainerBase):
                 )
 
             self.accelerator.print(f'Validation loss: {total_loss:.4f}')
+            self.validation_loss_dict[self.step] = total_loss
             self.has_already_validated = True
 
     @torch.no_grad()
