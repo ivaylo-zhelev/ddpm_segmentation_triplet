@@ -1008,11 +1008,11 @@ class TrainerBase():
 
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
 
-        training_loss_df = DataFrame(self.train_loss_dict, index=[milestone])
-        validation_loss_df = DataFrame(self.validation_loss_dict, index=[milestone])
+        training_loss_df = DataFrame(self.train_loss_dict, index=[milestone], columns=("epoch", "loss"))
+        validation_loss_df = DataFrame(self.validation_loss_dict, index=[milestone], columns=("epoch", "loss"))
 
-        training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv'))
-        validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv'))
+        training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
+        validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
 
     def load(self, milestone):
         accelerator = self.accelerator
