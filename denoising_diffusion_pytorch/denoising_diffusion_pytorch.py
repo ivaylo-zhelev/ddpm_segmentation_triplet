@@ -1010,10 +1010,10 @@ class TrainerBase():
 
         training_loss_df = DataFrame(
             data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()],
-            index=[milestone])
-        training_loss_df = DataFrame(
+            index=list(range(len(self.train_loss_dict))))
+        vakudation_loss_df = DataFrame(
             data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()],
-            index=[milestone])
+            index=list(range(len(self.train_loss_dict))))
 
         training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
         validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
