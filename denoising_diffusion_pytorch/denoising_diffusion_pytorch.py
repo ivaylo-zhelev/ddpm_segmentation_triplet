@@ -1359,15 +1359,12 @@ class TrainerSegmentation(TrainerBase):
         index = 0,
         threshold = 0.5
     ):
-        # Convert to grayscale and threshold the image
-        predicted = predicted.mean(0)
-        ground_truth = ground_truth.mean(0)
-        predicted = (predicted >= threshold).float()
-
+        prediction = torch.unsqueeze(prediction, dim=0)
+        ground_truth = torch.unsqueeze(ground_truth, dim=0)
         eval_dict = {key: value for (key, value) in image_info.items() if value}
         for metric in metrics:
             try:
-                eval_dict[metric] = EVAL_FUNCTIONS[metric](predicted, ground_truth)
+                eval_dict[metric] = EVAL_FUNCTIONS[metric](predicted, ground_truth, threshold=threshold)
             except KeyError:
                 raise ValueError(
                     f"Metric {metric} is not a valid metric. Options are: {EVAL_FUNCTIONS.keys()}")
