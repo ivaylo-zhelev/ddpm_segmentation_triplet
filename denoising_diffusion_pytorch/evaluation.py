@@ -10,7 +10,7 @@ def iou(predicted, ground_truth):
     return intersection / union
 
 def dice(predicted, ground_truth):
-    return dice_score(predicted, ground_truth)
+    return dice_score(predicted.int(), ground_truth.int())
 
 def ssim(predicted, ground_truth):
     return structural_similarity_index_measure(predicted, ground_truth)
