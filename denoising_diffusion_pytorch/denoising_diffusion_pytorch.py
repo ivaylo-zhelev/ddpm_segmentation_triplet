@@ -1151,34 +1151,29 @@ class TrainerSegmentation(TrainerBase):
     def validate_or_sample(self):
         if self.step != 0 and self.step % self.validate_every == 0:
             validation_set_length = len(self.valid_ds)
-            curr_valid_step = 0
             validation_steps = ceil(validation_set_length / self.batch_size)
 
             self.accelerator.print(f"Validation step {self.step // self.validate_every}...")
-            with tqdm(initial = curr_valid_step, total = validation_steps, disable = not self.accelerator.is_main_process) as pbar:
-                self.ema.ema_model.eval()
-                device = self.accelerator.device
+            self.ema.ema_model.eval()
+            device = self.accelerator.device
 
+            total_loss = 0.0
+            for _ in tqdm(range(validation_steps), desc="Validation progress:"):
+                data = next(self.valid_dl).to(device)
 
-                total_loss = 0.0
-                for _ in range(validation_steps):
-                    data = next(self.valid_dl).to(device)
+                loss = self.model(data)
+                loss = loss / validation_set_length
+                total_loss += loss.item()
 
-                    loss = self.model(data)
-                    loss = loss / validation_set_length
-                    total_loss += loss.item()
+                imgs, _ = torch.unbind(data, dim=1)
 
-                    imgs, _ = torch.unbind(data, dim=1)
+                self.infer_batch(
+                    batch=imgs,
+                    results_folder=self.results_folder / VALIDATION_FOLDER / GENERATED_FOLDER / f"epoch_{self.step}",
+                    original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None
+                )
 
-                    self.infer_batch(
-                        batch=imgs,
-                        results_folder=self.results_folder / VALIDATION_FOLDER / GENERATED_FOLDER / f"epoch_{self.step}",
-                        original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None
-                    )
-
-                    curr_valid_step += 1
-
-            pbar.set_description(f'Validation loss: {total_loss:.4f}')
+            self.accelerator.print(f'Validation loss: {total_loss:.4f}')
             self.has_already_validated = True
 
     @torch.no_grad()
@@ -1196,31 +1191,27 @@ class TrainerSegmentation(TrainerBase):
             self.test_dl = cycle(test_dl)
 
         test_set_length = len(test_ds)
-        curr_test_step = 0
         test_steps = ceil(test_set_length / self.batch_size)
 
         results_folder = results_folder or self.results_folder
 
         self.accelerator.print(f"Testing...")
         eval_results = DataFrame()
-        with tqdm(initial = curr_test_step, total = test_steps, disable = not self.accelerator.is_main_process) as pbar:
-            device = self.accelerator.device
-            for _ in range(test_steps):
-                data = next(self.test_dl).to(device)
-                imgs, gt_segm = torch.unbind(data, dim=1)
+        device = self.accelerator.device
+        for _ in tqdm(range(test_steps, desc = "Testing progress:")):
+            data = next(self.test_dl).to(device)
+            imgs, gt_segm = torch.unbind(data, dim=1)
 
-                eval_results = eval_results.append(
-                    self.infer_batch(
-                        batch=imgs,
-                        results_folder=results_folder / TESTING_FOLDER / GENERATED_FOLDER,
-                        ground_truths_folder=results_folder / TESTING_FOLDER / GT_FOLDER,
-                        original_image_folder=results_folder / TESTING_FOLDER / IMAGE_FOLDER,
-                        ground_truth_segmentation=gt_segm,
-                        eval_metrics=eval_metrics or self.eval_metrics
-                    )
+            eval_results = eval_results.append(
+                self.infer_batch(
+                    batch=imgs,
+                    results_folder=results_folder / TESTING_FOLDER / GENERATED_FOLDER,
+                    ground_truths_folder=results_folder / TESTING_FOLDER / GT_FOLDER,
+                    original_image_folder=results_folder / TESTING_FOLDER / IMAGE_FOLDER,
+                    ground_truth_segmentation=gt_segm,
+                    eval_metrics=eval_metrics or self.eval_metrics
                 )
-
-                curr_test_step += 1
+            )
 
         eval_results.to_csv(results_folder / TESTING_FOLDER / RESULTS_FILE)
         self.accelerator.print(f"Mean results: \n{eval_results.mean(numeric_only=True)}")
