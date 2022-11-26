@@ -1,18 +1,22 @@
+from torchmetrics.functional import dice_score, structural_similarity_index_measure
+
 IOU_METRIC = "IoU"
 DICE_METRIC = "Dice"
-JACCARD_METRIC = "Jaccard"
+SSIM_METRIC = "SSIM"
 
 def iou(predicted, ground_truth):
-    return 1.0
+    intersection = predicted.logical_and(ground_truth).sum()
+    union = predicted.logical_or(ground_truth).sum()
+    return intersection / union
 
 def dice(predicted, ground_truth):
-    return 0.5
+    return dice_score(predicted, ground_truth)
 
-def jaccard(predicted, ground_truth):
-    return 0.0
+def ssim(predicted, ground_truth):
+    return structural_similarity_index_measure(predicted, ground_truth)
 
 EVAL_FUNCTIONS = {
     IOU_METRIC: iou,
     DICE_METRIC: dice,
-    JACCARD_METRIC: jaccard
+    SSIM_METRIC: ssim
 }
