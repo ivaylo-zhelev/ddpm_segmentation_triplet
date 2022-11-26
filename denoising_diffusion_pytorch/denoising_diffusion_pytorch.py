@@ -1316,7 +1316,8 @@ class TrainerSegmentation(TrainerBase):
 
         batch_num = 0
         total_batches = ceil(len(dataset) / batch_size)
-        with tqdm(initial=batch_num, total = total_batches, disable = not self.accelerator.is_main_process) as pbar:
+        with tqdm(initial=batch_num, total = total_batches) as pbar:    
+            pbar.set_description(f"Total number of batches: {total_batches}")
             for batch_num in range(total_batches):
                 batch = next(data_loader).to(self.accelerator.device)
                 
@@ -1327,7 +1328,7 @@ class TrainerSegmentation(TrainerBase):
                     eval_metrics = tuple()
                 )
 
-        pbar.set_description(f"Total number of batches: {total_batches}")
+
 
     @staticmethod
     @torch.no_grad()
