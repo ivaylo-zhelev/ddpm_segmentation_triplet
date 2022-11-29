@@ -1183,12 +1183,15 @@ class TrainerSegmentation(TrainerBase):
                 loss = loss / validation_set_length
                 total_loss += loss.item()
 
-                imgs, _ = torch.unbind(data, dim=1)
+                imgs, gt_segm = torch.unbind(data, dim=1)
 
                 self.infer_batch(
                     batch=imgs,
+                    ground_truths_folder=self.results_folder / VALIDATION_FOLDER / GT_FOLDER
                     results_folder=self.results_folder / VALIDATION_FOLDER / GENERATED_FOLDER / f"epoch_{self.step}",
-                    original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None
+                    original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None,
+                    ground_truth_segmentation=gt_segm,
+                    eval_metrics=tuple()
                 )
 
             self.accelerator.print(f'Validation loss: {total_loss:.4f}')
