@@ -1176,7 +1176,7 @@ class TrainerSegmentation(TrainerBase):
             device = self.accelerator.device
 
             total_loss = 0.0
-            for _ in tqdm(range(validation_steps), desc="Validation progress:"):
+            for batch_num in tqdm(range(validation_steps), desc="Validation progress:"):
                 data = next(self.valid_dl).to(device)
 
                 loss = self.model(data)
@@ -1191,6 +1191,7 @@ class TrainerSegmentation(TrainerBase):
                     ground_truths_folder=self.results_folder / VALIDATION_FOLDER / GT_FOLDER if not self.has_already_validated else None,
                     original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None,
                     ground_truth_segmentation=gt_segm,
+                    start_ind=batch_num * self.batch_size,
                     eval_metrics=tuple()
                 )
 
@@ -1220,7 +1221,7 @@ class TrainerSegmentation(TrainerBase):
         self.accelerator.print(f"Testing...")
         eval_results = DataFrame()
         device = self.accelerator.device
-        for _ in tqdm(range(test_steps), desc = "Testing progress:"):
+        for batch_num in tqdm(range(test_steps), desc = "Testing progress:"):
             data = next(self.test_dl).to(device)
             imgs, gt_segm = torch.unbind(data, dim=1)
 
@@ -1231,6 +1232,7 @@ class TrainerSegmentation(TrainerBase):
                     ground_truths_folder=results_folder / TESTING_FOLDER / GT_FOLDER,
                     original_image_folder=results_folder / TESTING_FOLDER / IMAGE_FOLDER,
                     ground_truth_segmentation=gt_segm,
+                    start_ind=batch_num * self.batch_size,
                     eval_metrics=eval_metrics or self.eval_metrics
                 )
             )
@@ -1247,6 +1249,7 @@ class TrainerSegmentation(TrainerBase):
         ground_truths_folder = None,
         original_image_folder = None,
         threshold = 0.5,
+        start_ind = 0,
         eval_metrics = EVAL_FUNCTIONS.keys()
     ):
         results_folder = results_folder or self.results_folder
@@ -1264,18 +1267,18 @@ class TrainerSegmentation(TrainerBase):
 
         eval_results = DataFrame()
         for ind, (image, segmentation, ground_truth) in enumerate(zip(imgs_list, segm_list, gt_list)):
-            segmentation_filename = results_folder / f"sample_{ind}.png"
+            segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
             ground_truth_filename = None
             original_image_filename = None
 
             if ground_truths_folder and ground_truth is not None:
-                ground_truth_filename = ground_truths_folder / f"sample_{ind}.png"
+                ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
                 utils.save_image(
                     ground_truth,
                     ground_truth_filename)
 
             if original_image_folder:
-                original_image_filename = original_image_folder / f"sample_{ind}.png"
+                original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
                 utils.save_image(
                     image,
                     original_image_filename)
