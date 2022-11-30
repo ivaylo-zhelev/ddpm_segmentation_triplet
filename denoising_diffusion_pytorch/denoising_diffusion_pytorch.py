@@ -1179,9 +1179,10 @@ class TrainerSegmentation(TrainerBase):
             for batch_num in tqdm(range(validation_steps), desc="Validation progress:"):
                 data = next(self.valid_dl).to(device)
 
-                loss = self.model(data)
-                loss = loss / validation_set_length
-                total_loss += loss.item()
+                with self.accelerator.autocast():
+                    loss = self.model(data)
+                    loss = loss / validation_steps
+                    total_loss += loss.item()
 
                 imgs, gt_segm = torch.unbind(data, dim=1)
 
