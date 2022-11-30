@@ -19,6 +19,7 @@ setup(
     'einops',
     'ema-pytorch',
     'importlib_metadata',
+    'nonechucks',
     'packaging',
     'pandas',
     'pillow',
