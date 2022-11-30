@@ -564,7 +564,7 @@ class GaussianDiffusionBase(nn.Module):
 
         x_start = None
 
-        for t in tqdm(reversed(range(0, self.num_timesteps)), desc = 'sampling loop time step', total = self.num_timesteps):
+        for t in tqdm(reversed(range(0, self.sampling_timesteps)), desc = 'sampling loop time step', total = self.sampling_timesteps):
             self_cond = x_start if self.self_condition else None
             img, x_start = self.p_sample(img, t, self_cond)
 
