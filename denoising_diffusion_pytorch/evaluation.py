@@ -1,4 +1,4 @@
-from torchmetrics.functional.image structural_similarity_index_measure
+from torchmetrics.functional.image import structural_similarity_index_measure
 from torchmetrics.functional.classification import dice
 
 
