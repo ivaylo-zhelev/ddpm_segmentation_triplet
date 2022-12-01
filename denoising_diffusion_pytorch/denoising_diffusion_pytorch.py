@@ -799,7 +799,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         elif self.loss_type == "exact_triplet":
             return exact_triplet_margin_loss
         elif self.loss_type == "regularized_triplet":
-            return regularized_margin_loss
+            return regularized_triplet_loss
         else:
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
