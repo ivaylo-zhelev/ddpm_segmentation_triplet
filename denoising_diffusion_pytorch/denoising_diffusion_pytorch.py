@@ -84,6 +84,8 @@ def convert_image_to_fn(img_type, image):
         return image.convert(img_type)
     return image
 
+def mse(anchor, positive, *args, **kwargs):
+    return F.mse_loss(anchor, positive)
 # normalization functions
 
 def normalize_to_neg_one_to_one(img):
@@ -793,6 +795,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
     def loss_fn(self):
         if self.loss_type == "triplet":
             return F.triplet_margin_loss
+        elif self.loss_type == "mse":
+            return mse
         else:
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
