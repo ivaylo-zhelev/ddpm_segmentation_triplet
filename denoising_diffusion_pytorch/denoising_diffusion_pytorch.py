@@ -5,7 +5,7 @@ from random import random
 from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
-from math import ceil
+from math import ceil, floor
 
 import torch
 from torch import nn, einsum
@@ -60,7 +60,7 @@ def has_int_squareroot(num):
     return (math.sqrt(num) ** 2) == num
 
 def split_int_in_propotions(num, split):
-    lengths = [round(prop * num) for prop in split]
+    lengths = [floor(prop * num) for prop in split]
     remainder = num - sum(lengths)
     while remainder > 0:
         lengths[ind % len(split)] += 1
