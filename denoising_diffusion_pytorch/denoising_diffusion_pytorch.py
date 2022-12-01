@@ -28,6 +28,7 @@ from ema_pytorch import EMA
 from accelerate import Accelerator
 
 from denoising_diffusion_pytorch.evaluation import EVAL_FUNCTIONS
+from denoising_diffusion_pytorch.loss_functions import mse, exact_triplet_margin_loss, regularized_margin_loss
 # constants
 
 ModelPrediction =  namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
@@ -84,8 +85,6 @@ def convert_image_to_fn(img_type, image):
         return image.convert(img_type)
     return image
 
-def mse(anchor, positive, reduction, *args, **kwargs):
-    return F.mse_loss(anchor, positive, reduction=reduction)
 # normalization functions
 
 def normalize_to_neg_one_to_one(img):
@@ -797,6 +796,10 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             return F.triplet_margin_loss
         elif self.loss_type == "mse":
             return mse
+        elif self.loss_type == "exact_triplet":
+            return exact_triplet_margin_loss
+        elif self.loss_type == "regularized_triplet":
+            return regularized_margin_loss
         else:
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
