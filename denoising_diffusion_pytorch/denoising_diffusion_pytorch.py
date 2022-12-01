@@ -60,7 +60,7 @@ def has_int_squareroot(num):
     return (math.sqrt(num) ** 2) == num
 
 def split_int_in_propotions(num, split):
-    lengths = [round(prop * num) for prop in split]
+    lengths = [math.floor(prop * num) for prop in split]
     remainder = num - sum(lengths)
 
     ind = 0
