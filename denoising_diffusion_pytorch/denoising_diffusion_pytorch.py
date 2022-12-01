@@ -1129,7 +1129,6 @@ class TrainerSegmentation(TrainerBase):
         segmentations_folder,
         validate_every = 1000,
         data_split = (0.8, 0.1, 0.1),
-        skip_empty_segmentations = False,
         eval_metrics = EVAL_FUNCTIONS.keys(),
         seed = 42,
         *args,
@@ -1145,7 +1144,6 @@ class TrainerSegmentation(TrainerBase):
             images_folder=images_folder,
             segmentations_folder=segmentations_folder,
             image_size=self.image_size,
-            skip_empty_segmentations=skip_empty_segmentations,
             augment_horizontal_flip=self.augment_horizontal_flip,
             convert_image_to=self.convert_image_to
         )
