@@ -28,7 +28,7 @@ from ema_pytorch import EMA
 from accelerate import Accelerator
 
 from denoising_diffusion_pytorch.evaluation import EVAL_FUNCTIONS
-from denoising_diffusion_pytorch.loss_functions import mse, exact_triplet_margin_loss, regularized_margin_loss
+from denoising_diffusion_pytorch.loss_functions import mse, exact_triplet_margin_loss, regularized_triplet_loss
 # constants
 
 ModelPrediction =  namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
