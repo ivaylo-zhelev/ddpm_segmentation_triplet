@@ -26,7 +26,6 @@ from tqdm.auto import tqdm
 from ema_pytorch import EMA
 
 from accelerate import Accelerator
-from nonechucks import SafeDataset, SafeDataLoader
 
 from denoising_diffusion_pytorch.evaluation import EVAL_FUNCTIONS
 # constants
@@ -886,7 +885,6 @@ class DatasetSegmentation(Dataset):
         self,
         images_folder,
         segmentations_folder,
-        skip_empty_segmentations = False,
         image_mode = "RGB",
         *args,
         **kwargs
@@ -895,7 +893,6 @@ class DatasetSegmentation(Dataset):
         self.images_folder = images_folder
         self.segmentations_folder = segmentations_folder
         self.image_mode = image_mode
-        self.skip_empty_segmentations = skip_empty_segmentations
         segmentation_images = {path.name for path in segmentations_folder.glob("*")}
         self.paths = [
             (path_img, Path(segmentations_folder) / Path(path_img).name)
@@ -906,9 +903,6 @@ class DatasetSegmentation(Dataset):
         img_path, segm_path = self.paths[index]
         img = Image.open(img_path).convert(self.image_mode)
         segm = Image.open(segm_path).convert(self.image_mode)
-        if segm.sum() == 0.0 and self.skip_empty_segmentations:
-            raise Exception(f"Empty segmentation at {segm_path.name}")
-
         return torch.stack((self.transform(img), self.transform(segm)), dim=0)
 
 
@@ -980,7 +974,7 @@ class TrainerBase():
     @ds.setter
     def ds(self, ds):
         self._ds = ds
-        dl = SafeDataLoader(SafeDataset(self.ds), batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
+        dl = DataLoader(self.ds, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
 
         dl = self.accelerator.prepare(dl)
         self.dl = cycle(dl)
@@ -1162,8 +1156,8 @@ class TrainerSegmentation(TrainerBase):
             lengths=split_int_in_propotions(len(dataset), data_split),
             generator=generator
         )
-        valid_dl = SafeDataLoader(
-            SafeDataset(self.valid_ds),
+        valid_dl = DataLoader(
+            self.valid_ds,
             batch_size=self.batch_size,
             shuffle=True,
             pin_memory=True,
@@ -1212,8 +1206,8 @@ class TrainerSegmentation(TrainerBase):
     def test(self, test_ds = None, results_folder = None, eval_metrics = tuple()):
         if test_ds or not self.test_dl:
             test_ds = test_ds or self.test_ds
-            test_dl = SafeDataLoader(
-                SafeDataset(test_ds),
+            test_dl = DataLoader(
+                test_ds,
                 batch_size=self.batch_size,
                 shuffle=True,
                 pin_memory=True,
