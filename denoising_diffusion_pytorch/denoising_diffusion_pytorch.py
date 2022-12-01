@@ -84,8 +84,8 @@ def convert_image_to_fn(img_type, image):
         return image.convert(img_type)
     return image
 
-def mse(anchor, positive, *args, **kwargs):
-    return F.mse_loss(anchor, positive)
+def mse(anchor, positive, reduction, *args, **kwargs):
+    return F.mse_loss(anchor, positive, reduction=reduction)
 # normalization functions
 
 def normalize_to_neg_one_to_one(img):
