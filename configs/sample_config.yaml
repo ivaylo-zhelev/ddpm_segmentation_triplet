@@ -1,0 +1,23 @@
+images_folder: /path/to/images/folder
+segmentation_folder: /path/to/segmentation/folder
+results_folder: /path/to/results/folder
+
+dim: 64
+dim_mults: [1, 2, 4, 8]
+
+image_size: 320
+margin: 1.0
+loss_type: "regularized_triplet"
+timesteps: 1000           
+sampling_timesteps: 100
+is_loss_time_dependent: False
+
+validate_every: 2000
+save_every: 2000
+data_split: [0.8, 0.1, 0.1]
+num_samples: 25
+train_batch_size: 8
+train_lr: 0.00008
+train_num_steps: 100000    
+gradient_accumulate_every: 2
+ema_decay: 0.995
