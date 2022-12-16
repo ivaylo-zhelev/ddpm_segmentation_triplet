@@ -1,4 +1,5 @@
 import torch.nn.functional as F
+import torch
 
 def mse(anchor, positive, reduction, *args, **kwargs):
     return F.mse_loss(anchor, positive, reduction=reduction)
