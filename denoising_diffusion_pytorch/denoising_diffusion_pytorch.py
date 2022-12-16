@@ -780,7 +780,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         self,
         model,
         image_size,
-        margin = 0.0,
+        margin = 1.0,
+        regularization_margin = 10.0,
         loss_type = "triplet",
         is_loss_time_dependent = False,
         *args,
@@ -789,6 +790,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         super().__init__(model, image_size, *args, **kwargs)
         self.loss_type = loss_type
         self.margin = margin
+        self.regularization_margin = regularization_margin
         self.is_loss_time_dependent = is_loss_time_dependent
 
     @property
@@ -830,8 +832,11 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
-        loss = self.loss_fn(anchor=model_out, positive=positive, negative=negative,
+        loss = self.loss_fn(anchor=model_out,
+                            positive=positive,
+                            negative=negative,
                             margin=self.margin,
+                            regularization_margin=self.regularization_margin,
                             reduction='none')
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
