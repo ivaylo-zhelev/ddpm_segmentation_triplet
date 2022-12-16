@@ -24,5 +24,14 @@ def exact_triplet_margin_loss(anchor, positive, negative, p=2.0, eps=1e-6, margi
 
     return loss
 
-def regularized_triplet_loss(anchor, positive, negative, p=2.0, eps=1e-6, reduction='none', *args, **kwargs):
+
+def triplet_loss_dynamic_margin(anchor, positive, negative, p=2.0, eps=1e-6, reduction='none', *args, **kwargs):
     return exact_triplet_margin_loss(anchor, positive, negative, p=p, eps=eps, reduction=reduction, margin=None)
+
+
+def regularized_triplet_loss(anchor, positive, negative, p=2.0, eps=1e-6, margin=1.0, reduction='none'):
+    loss = F.triplet_margin_loss(anchor, positive, negative, margin=margin, p=p, eps=eps, reduction=reduction)
+    black_image = torch.zeros_like(anchor)
+    regularization = F.triplet_margin_loss(anchor, positive, black_image, margin=margin, p=p, eps=eps, reduction=reduction)
+
+    return loss * regularization

@@ -10,6 +10,8 @@ from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMappi
 # TODO try TripletMarginLossWithDistance
 # TODO try TripletSemiHardLoss
 # TODO try training on little data and check for overfitting
+# TODO try gradient clipping
+# TODO check the implementation of the time-dependent loss
 # TODO try hypertune the optimizer
 
 
