@@ -12,7 +12,7 @@ from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMappi
 # TODO try training on little data and check for overfitting
 # TODO try gradient clipping
 # TODO check the implementation of the time-dependent loss
-# TODO try hypertune the optimizer
+# TODO try hypertune or change the optimizer
 
 
 @dataclass
@@ -76,6 +76,7 @@ def train(config):
         data_split=config.data_split,
         num_samples=config.num_samples,
         train_batch_size=config.train_batch_size,
+        optimizer="adagrad",
         train_lr=config.train_lr,
         train_num_steps=config.train_num_steps,    
         gradient_accumulate_every=config.gradient_accumulate_every,

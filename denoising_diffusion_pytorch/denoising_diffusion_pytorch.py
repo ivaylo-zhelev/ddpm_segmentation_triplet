@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torch.utils.data as torch_data
 from torch.utils.data import DataLoader, random_split
 
-from torch.optim import Adam
+from torch.optim import Adam, Rprop, Adagrad
 from torchvision import transforms as T, utils
 
 from einops import rearrange, reduce
@@ -32,13 +32,19 @@ from denoising_diffusion_pytorch.loss_functions import (
     mse, exact_triplet_margin_loss, regularized_triplet_loss, triplet_loss_dynamic_margin)
 # constants
 
-ModelPrediction =  namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
+ModelPrediction = namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
 VALIDATION_FOLDER = "validation"
 TESTING_FOLDER = "testing"
 GENERATED_FOLDER = "generated"
 GT_FOLDER = "ground_truths"
 IMAGE_FOLDER = "original_images"
 RESULTS_FILE = "evaluation_results.csv"
+
+OPTIMIZERS_DICT = {
+    "adam": Adam,
+    "rprop": Rprop,
+    "adagrad": Adagrad
+}
 
 # helpers functions
 
@@ -934,8 +940,13 @@ class TrainerBase():
         train_lr = 1e-4,
         train_num_steps = 100000,
         ema_update_every = 10,
+        optimizer = "adam",
         ema_decay = 0.995,
         adam_betas = (0.9, 0.99),
+        lr_decay = 0,
+        weight_decay = 0,
+        etas = (0.5, 1.2),
+        step_sizes = (1e-06, 50),
         num_samples = 25,
         results_folder = './results',
         amp = False,
@@ -966,6 +977,7 @@ class TrainerBase():
         self.train_loss_dict = {}
         self.validation_loss_dict = {}
 
+        self.optimizer = optimizer
         self.train_lr = train_lr
         self.adam_betas = adam_betas
 
@@ -995,8 +1007,19 @@ class TrainerBase():
         self.dl = cycle(dl)
 
         # optimizer
+        opt_kwargs = {
+            "lr": self.train_lr,
+            "betas": self.adam_betas,
+            "lr_decay": self.lr_decay,
+            "etas": self.etas,
+            "step_sizes": self.step_sizes,
+            "weight_decay": self.weight_decay
+        }
 
-        self.opt = Adam(self.model.parameters(), lr=self.train_lr, betas=self.adam_betas)
+        try:
+            self.opt = OPTIMIZERS_DICT[self.optimizer](self.model.parameters(), opt_kwargs)
+        except KeyError:
+            assert print(f"{self.optimizer} is not a valid optimizer. Available options are {OPTIMIZERS_DICT.keys()}")
 
         # for logging results in a folder periodically
         if self.accelerator.is_main_process:
