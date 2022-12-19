@@ -7,10 +7,19 @@ dim_mults: [1, 2, 4, 8]
 
 image_size: 320
 margin: 1.0
-loss_type: "regularized_triplet"
+loss_type: regularized_triplet
 timesteps: 1000           
 sampling_timesteps: 100
 is_loss_time_dependent: False
+
+optimizer: adam
+adam_betas: [0.9, 0.99]
+lr_decay: 0
+weight_decay: 0
+rms_prop_alpha: 0.99
+momentum: 0
+etas: [0.5, 1.2]
+step_sizes: [0.000001, 50]
 
 validate_every: 2000
 save_every: 2000

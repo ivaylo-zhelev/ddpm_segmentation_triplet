@@ -31,6 +31,15 @@ class TrainingConfig:
     sampling_timesteps: int = 100
     is_loss_time_dependent: bool = False
 
+    optimizer: str = "adam"
+    adam_betas: Tuple[float, float] = (0.9, 0.99)
+    lr_decay: float = 0
+    weight_decay: float = 0
+    rms_prop_alpha: float = 0.99
+    momentum: float = 0
+    etas: Tuple[float, float] = (0.5, 1.2)
+    step_sizes: Tuple[float, float] = (1e-06, 50)
+
     validate_every: int = 2000
     save_every: int = 2000
     data_split: Tuple[float, float, float] = (0.8, 0.1, 0.1)
@@ -76,7 +85,14 @@ def train(config):
         data_split=config.data_split,
         num_samples=config.num_samples,
         train_batch_size=config.train_batch_size,
-        optimizer="adagrad",
+        optimizer=config.optimizer,
+        adam_betas=config.adam_betas,
+        lr_decay=config.lr_decay,
+        weight_decay=config.weight_decay,
+        rms_prop_alpha=config.rms_prop_alpha,
+        momentum=config.momentum,
+        etas=config.etas,
+        step_sizes=config.step_sizes,
         train_lr=config.train_lr,
         train_num_steps=config.train_num_steps,    
         gradient_accumulate_every=config.gradient_accumulate_every,

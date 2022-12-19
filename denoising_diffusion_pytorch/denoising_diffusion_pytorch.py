@@ -808,7 +808,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             return mse
         elif self.loss_type == "exact_triplet":
             return exact_triplet_margin_loss
-        elif self.loss_type == "triple_dynamic_margin":
+        elif self.loss_type == "triplet_dynamic_margin":
             return triplet_loss_dynamic_margin
         elif self.loss_type == "regularized_triplet":
             return regularized_triplet_loss
