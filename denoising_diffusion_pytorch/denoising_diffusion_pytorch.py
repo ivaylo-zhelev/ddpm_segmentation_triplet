@@ -1107,6 +1107,20 @@ class TrainerBase():
                     self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+                grads = [p.grad for p in self.model.parameters() if p.grad is not None]
+                print("Total norm:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
+                for ind, layer in enumerate(self.model.model.ups):
+                    grads_layer = [p.grad for p in layer.parameters() if p.grad is not None]
+                    print(f"Up layer {ind}:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads_layer])))
+                for ind, layer in enumerate(self.model.model.downs):
+                    grads_layer = [p.grad for p in layer.parameters() if p.grad is not None]
+                    print(f"Down layer {ind}:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads_layer])))
+                    
+                grads = [p.grad for p in self.model.model.final_res_block.parameters() if p.grad is not None]
+                print("Final resnet:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
+                grads = [p.grad for p in self.model.model.final_conv.parameters() if p.grad is not None]
+                print("Final convolution:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
+                
                 pbar.set_description(f'Training loss: {total_loss:.4f}')
                 self.train_loss_dict[self.step] = total_loss
 
