@@ -9,9 +9,7 @@ from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMappi
 
 # TODO try TripletMarginLossWithDistance
 # TODO try TripletSemiHardLoss
-# TODO try training on little data and check for overfitting
 # TODO try gradient clipping
-# TODO check the implementation of the time-dependent loss
 # TODO try hypertune or change the optimizer
 
 
@@ -56,6 +54,10 @@ class TrainingConfig:
             # If there is a default and the value of the field is none we can assign a value
             if not isinstance(field.default, _MISSING_TYPE) and getattr(self, field.name) is None:
                 setattr(self, field.name, field.default)
+
+        self.images_folder = Path(self.images_folder)
+        self.segmentation_folder = Path(self.segmentation_folder)
+        self.results_folder = Path(self.results_folder)
 
 
 def train(config):

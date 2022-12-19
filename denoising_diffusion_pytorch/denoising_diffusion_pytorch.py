@@ -41,10 +41,10 @@ IMAGE_FOLDER = "original_images"
 RESULTS_FILE = "evaluation_results.csv"
 
 OPTIMIZERS_DICT = {
-    "adam": Adam,
-    "rprop": Rprop,
-    "adagrad": Adagrad,
-    "rmsprop": RMSprop
+    "adam": (Adam, ("lr", "betas")),
+    "rprop": (Rprop, ("lr", "etas", "step_sizes")),
+    "adagrad": (Adagrad, ("lr", "lr_decay", "weight_decay")),
+    "rmsprop": (RMSprop, ("lr", "momentum", "alpha", "weight_decay"))
 }
 
 # helpers functions
@@ -1024,12 +1024,12 @@ class TrainerBase():
             "etas": self.etas,
             "step_sizes": self.step_sizes,
             "weight_decay": self.weight_decay,
-            "rms_prop_alpha": self.rms_prop_alpha,
+            "alpha": self.rms_prop_alpha,
             "momentum": self.momentum
         }
-
+        opt_kwargs = {k: v for k, v in opt_kwargs.items() if k in OPTIMIZERS_DICT[self.optimizer][1]}
         try:
-            self.opt = OPTIMIZERS_DICT[self.optimizer](self.model.parameters(), opt_kwargs)
+            self.opt = OPTIMIZERS_DICT[self.optimizer][0](self.model.parameters(), **opt_kwargs)
         except KeyError:
             assert print(f"{self.optimizer} is not a valid optimizer. Available options are {OPTIMIZERS_DICT.keys()}")
 
