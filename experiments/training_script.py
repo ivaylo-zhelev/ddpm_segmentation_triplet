@@ -9,8 +9,7 @@ from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMappi
 
 # TODO try TripletMarginLossWithDistance
 # TODO try TripletSemiHardLoss
-# TODO try gradient clipping
-# TODO try hypertune or change the optimizer
+# TODO check into weight initialization
 
 
 @dataclass
