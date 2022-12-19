@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torch.utils.data as torch_data
 from torch.utils.data import DataLoader, random_split
 
-from torch.optim import Adam, Rprop, Adagrad
+from torch.optim import Adam, Adagrad, RMSprop, Rprop
 from torchvision import transforms as T, utils
 
 from einops import rearrange, reduce
@@ -43,7 +43,8 @@ RESULTS_FILE = "evaluation_results.csv"
 OPTIMIZERS_DICT = {
     "adam": Adam,
     "rprop": Rprop,
-    "adagrad": Adagrad
+    "adagrad": Adagrad,
+    "rmsprop": RMSprop
 }
 
 # helpers functions
@@ -296,7 +297,7 @@ class Unet(nn.Module):
         dim,
         init_dim = None,
         out_dim = None,
-        dim_mults=(1, 2, 4, 8),
+        dim_mults = (1, 2, 4, 8),
         channels = 3,
         self_condition = False,
         resnet_block_groups = 8,
@@ -945,6 +946,8 @@ class TrainerBase():
         adam_betas = (0.9, 0.99),
         lr_decay = 0,
         weight_decay = 0,
+        rms_prop_alpha = 0.99,
+        momentum = 0,
         etas = (0.5, 1.2),
         step_sizes = (1e-06, 50),
         num_samples = 25,
@@ -979,7 +982,14 @@ class TrainerBase():
 
         self.optimizer = optimizer
         self.train_lr = train_lr
+        
         self.adam_betas = adam_betas
+        self.lr_decay = lr_decay
+        self.weight_decay = weight_decay
+        self.rms_prop_alpha = rms_prop_alpha
+        self.momentum = momentum
+        self.etas = etas
+        self.step_sizes = step_sizes
 
         self.ema_decay = ema_decay
         self.ema_update_every = ema_update_every
@@ -1013,7 +1023,9 @@ class TrainerBase():
             "lr_decay": self.lr_decay,
             "etas": self.etas,
             "step_sizes": self.step_sizes,
-            "weight_decay": self.weight_decay
+            "weight_decay": self.weight_decay,
+            "rms_prop_alpha": self.rms_prop_alpha,
+            "momentum": self.momentum
         }
 
         try:
