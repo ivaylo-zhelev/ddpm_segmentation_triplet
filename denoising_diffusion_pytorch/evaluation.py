@@ -1,5 +1,5 @@
 from torchmetrics.functional.image import structural_similarity_index_measure
-from torchmetrics.functional.classification import dice
+from torchmetrics.functional.classification import dice as dice_score
 
 
 IOU_METRIC = "IoU"
@@ -19,7 +19,7 @@ def iou(predicted, ground_truth, threshold=0.5):
 def dice(predicted, ground_truth, threshold=0.5):
     predicted = (predicted >= threshold).int()
     ground_truth = (ground_truth >= threshold).int()
-    return dice(predicted, ground_truth).item()
+    return dice_score(predicted, ground_truth).item()
 
 def ssim(predicted, ground_truth, *args, **kwargs):
     return structural_similarity_index_measure(predicted, ground_truth).item()
