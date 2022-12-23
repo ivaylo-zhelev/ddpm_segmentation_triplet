@@ -25,6 +25,7 @@ class TrainingConfig:
     image_size: int = 320
     margin: float = 1.0
     regularization_margin: float = 10.0
+    regularize_to_white_image: bool = True
     loss_type: str = "regularized_triplet"
     timesteps: int = 1000           
     sampling_timesteps: int = 100
@@ -72,6 +73,7 @@ def train(config):
         image_size=config.image_size,
         margin=config.margin,
         regularization_margin=config.regularization_margin,
+        regularize_to_white_image=config.regularize_to_white_image,
         loss_type=config.loss_type,
         timesteps=config.timesteps,           
         sampling_timesteps=config.sampling_timesteps,

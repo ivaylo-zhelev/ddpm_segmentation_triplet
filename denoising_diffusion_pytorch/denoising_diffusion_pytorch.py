@@ -789,6 +789,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         image_size,
         margin = 1.0,
         regularization_margin = 10.0,
+        regularize_to_white_image = True,
         loss_type = "triplet",
         is_loss_time_dependent = False,
         *args,
@@ -798,6 +799,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         self.loss_type = loss_type
         self.margin = margin
         self.regularization_margin = regularization_margin
+        self.regularize_to_white_image = regularize_to_white_image
         self.is_loss_time_dependent = is_loss_time_dependent
 
     @property
@@ -844,6 +846,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             negative=negative,
                             margin=self.margin,
                             regularization_margin=self.regularization_margin,
+                            regularize_to_white_image = True,
                             reduction='none')
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
