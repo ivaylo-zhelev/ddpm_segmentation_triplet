@@ -598,7 +598,7 @@ class GaussianDiffusionBase(nn.Module):
             img = self.q_sample(img, t_batched, noise=noise)
 
 
-        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{milestone}.png")
+        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.step}.png")
         x_start = None
 
         for ind, (time, time_next) in enumerate(tqdm(time_pairs, desc = 'sampling loop time step')):
@@ -622,7 +622,7 @@ class GaussianDiffusionBase(nn.Module):
                   c * pred_noise + \
                   sigma * noise
             
-            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{milestone}_t={ind}.png")
+            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.step}_t={ind}.png")
 
         img = unnormalize_to_zero_to_one(img)
         return img
