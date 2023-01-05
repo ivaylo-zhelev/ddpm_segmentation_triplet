@@ -466,6 +466,7 @@ class GaussianDiffusionBase(nn.Module):
         self.self_condition = self.model.self_condition
 
         self.image_size = image_size
+        self.milestone = 0
 
         if beta_schedule == 'linear':
             betas = linear_beta_schedule(timesteps)
@@ -598,7 +599,7 @@ class GaussianDiffusionBase(nn.Module):
             img = self.q_sample(img, t_batched, noise=noise)
 
 
-        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.step}.png")
+        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.milestone}.png")
         x_start = None
 
         for ind, (time, time_next) in enumerate(tqdm(time_pairs, desc = 'sampling loop time step')):
@@ -622,8 +623,8 @@ class GaussianDiffusionBase(nn.Module):
                   c * pred_noise + \
                   sigma * noise
             
-            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.step}_t={ind}.png")
-
+            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.milestone}_t={ind}.png")
+        self.milestone += 1
         img = unnormalize_to_zero_to_one(img)
         return img
 
