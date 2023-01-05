@@ -529,6 +529,47 @@ class GaussianDiffusionBase(nn.Module):
             extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
         )
 
+    def predict_noise_from_start(self, x_t, t, x0):
+        return (
+            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
+            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+        )
+
+    def predict_v(self, x_start, t, noise):
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * noise -
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_start
+        )
+
+    def predict_start_from_v(self, x_t, t, v):
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
+        )
+
+    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
+        model_output = self.model(x, t, x_self_cond)
+        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
+
+        if self.objective == 'pred_noise':
+            pred_noise = model_output
+            x_start = self.predict_start_from_noise(x, t, pred_noise)
+            x_start = maybe_clip(x_start)
+
+        elif self.objective == 'pred_x0':
+            x_start = model_output
+            x_start = maybe_clip(x_start)
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        elif self.objective == 'pred_v':
+            v = model_output
+            x_start = self.predict_start_from_v(x, t, v)
+            x_start = maybe_clip(x_start)
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        return ModelPrediction(pred_noise, x_start)
+
+
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
         preds = self.model_predictions(x, t, x_self_cond)
         x_start = preds.pred_x_start
@@ -671,52 +712,7 @@ class GaussianDiffusion(GaussianDiffusionBase):
 
         self.loss_type = loss_type
 
-    def predict_start_from_noise(self, x_t, t, noise):
-        return (
-            extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
-        )
-
-    def predict_noise_from_start(self, x_t, t, x0):
-        return (
-            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
-        )
-
-    def predict_v(self, x_start, t, noise):
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * noise -
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_start
-        )
-
-    def predict_start_from_v(self, x_t, t, v):
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
-        )
-
-    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
-        model_output = self.model(x, t, x_self_cond)
-        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
-
-        if self.objective == 'pred_noise':
-            pred_noise = model_output
-            x_start = self.predict_start_from_noise(x, t, pred_noise)
-            x_start = maybe_clip(x_start)
-
-        elif self.objective == 'pred_x0':
-            x_start = model_output
-            x_start = maybe_clip(x_start)
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        elif self.objective == 'pred_v':
-            v = model_output
-            x_start = self.predict_start_from_v(x, t, v)
-            x_start = maybe_clip(x_start)
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        return ModelPrediction(pred_noise, x_start)
-
+    
     @torch.no_grad()
     def interpolate(self, x1, x2, t = None, lam = 0.5):
         b, *_, device = *x1.shape, x1.device
@@ -860,12 +856,12 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return loss.mean()
 
-    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
+    """def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
         model_output = self.model(x, t, x_self_cond)
         maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
         x_start = self.predict_start_from_noise(x, t, model_output)
 
-        return ModelPrediction(model_output, maybe_clip(x))
+        return ModelPrediction(model_output, maybe_clip(x))"""
 
     def forward(self, sample_pair, *args, **kwargs):
         img, segmentation = torch.unbind(sample_pair, dim=1)
