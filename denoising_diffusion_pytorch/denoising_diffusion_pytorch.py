@@ -599,8 +599,9 @@ class GaussianDiffusionBase(nn.Module):
             noise = default(noise, lambda: torch.randn_like(img))
             img = self.q_sample(img, t_batched, noise=noise)
 
-
-        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.milestone}.png")
+        noisy_image_path = self.results_path / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}"
+        noisy_image_path.mkdir(exist_ok=True, parents=True)
+        utils.save_image(img[0], noisy_image_path / "original.png")
         x_start = None
 
         for ind, (time, time_next) in enumerate(tqdm(time_pairs, desc = 'sampling loop time step')):
@@ -624,7 +625,7 @@ class GaussianDiffusionBase(nn.Module):
                   c * pred_noise + \
                   sigma * noise
             
-            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{self.milestone}_t={ind}.png")
+            utils.save_image(img[0], noisy_image_path / f"denoised_t={ind}.png")
         self.milestone += 1
         img = unnormalize_to_zero_to_one(img)
         return img
