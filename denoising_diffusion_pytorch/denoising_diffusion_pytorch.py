@@ -597,9 +597,11 @@ class GaussianDiffusionBase(nn.Module):
             noise = default(noise, lambda: torch.randn_like(img))
             img = self.q_sample(img, t_batched, noise=noise)
 
+
+        utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{milestone}.png")
         x_start = None
 
-        for time, time_next in tqdm(time_pairs, desc = 'sampling loop time step'):
+        for ind, (time, time_next) in enumerate(tqdm(time_pairs, desc = 'sampling loop time step')):
             time_cond = torch.full((batch,), time, device=device, dtype=torch.long)
             self_cond = x_start if self.self_condition else None
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, self_cond, clip_x_start = clip_denoised)
@@ -619,6 +621,8 @@ class GaussianDiffusionBase(nn.Module):
             img = x_start * alpha_next.sqrt() + \
                   c * pred_noise + \
                   sigma * noise
+            
+            utils.save_image(img[0], self.results_folder / f"noisy_images/sample_{milestone}_t={ind}.png")
 
         img = unnormalize_to_zero_to_one(img)
         return img
@@ -1110,7 +1114,7 @@ class TrainerBase():
                     self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                grads = [p.grad for p in self.model.parameters() if p.grad is not None]
+                """grads = [p.grad for p in self.model.parameters() if p.grad is not None]
                 print("Total norm:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
                 for ind, layer in enumerate(self.model.model.ups):
                     grads_layer = [p.grad for p in layer.parameters() if p.grad is not None]
@@ -1123,7 +1127,7 @@ class TrainerBase():
                 print("Final resnet:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
                 grads = [p.grad for p in self.model.model.final_conv.parameters() if p.grad is not None]
                 print("Final convolution:", torch.norm(torch.stack([torch.norm(g.detach()).to(device) for g in grads])))
-                
+                """
                 pbar.set_description(f'Training loss: {total_loss:.4f}')
                 self.train_loss_dict[self.step] = total_loss
 
