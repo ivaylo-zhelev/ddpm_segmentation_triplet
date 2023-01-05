@@ -456,7 +456,7 @@ class GaussianDiffusionBase(nn.Module):
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
-        ddim_sampling_eta = 1.
+        ddim_sampling_eta = 0.
     ):
         super().__init__()
         assert not model.random_or_learned_sinusoidal_cond
