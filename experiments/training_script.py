@@ -9,8 +9,8 @@ from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMappi
 
 # TODO try TripletMarginLossWithDistance
 # TODO try TripletSemiHardLoss
-# TODO try gradient clipping
-# TODO try hypertune or change the optimizer
+# TODO check into weight initialization
+# TODO check into DDIM sampling, maybe it pollutes the image too much
 
 
 @dataclass
@@ -24,6 +24,8 @@ class TrainingConfig:
 
     image_size: int = 320
     margin: float = 1.0
+    regularization_margin: float = 10.0
+    regularize_to_white_image: bool = True
     loss_type: str = "regularized_triplet"
     timesteps: int = 1000           
     sampling_timesteps: int = 100
@@ -70,6 +72,8 @@ def train(config):
         model,
         image_size=config.image_size,
         margin=config.margin,
+        regularization_margin=config.regularization_margin,
+        regularize_to_white_image=config.regularize_to_white_image,
         loss_type=config.loss_type,
         timesteps=config.timesteps,           
         sampling_timesteps=config.sampling_timesteps,
