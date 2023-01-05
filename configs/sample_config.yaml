@@ -12,6 +12,7 @@ regularize_to_white_image: True
 loss_type: regularized_triplet
 timesteps: 1000           
 sampling_timesteps: 100
+noising_timesteps: null
 is_loss_time_dependent: False
 
 optimizer: adam

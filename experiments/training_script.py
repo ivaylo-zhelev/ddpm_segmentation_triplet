@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 from pathlib import Path
 from argparse import ArgumentParser
 
@@ -7,10 +7,8 @@ import ruamel.yaml as yaml
 
 from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMapping, TrainerSegmentation
 
-# TODO try TripletMarginLossWithDistance
 # TODO try TripletSemiHardLoss
 # TODO check into weight initialization
-# TODO check into DDIM sampling, maybe it pollutes the image too much
 
 
 @dataclass
@@ -29,6 +27,7 @@ class TrainingConfig:
     loss_type: str = "regularized_triplet"
     timesteps: int = 1000           
     sampling_timesteps: int = 100
+    noising_timesteps: Optional[int] = None
     is_loss_time_dependent: bool = False
 
     optimizer: str = "adam"
@@ -77,6 +76,7 @@ def train(config):
         loss_type=config.loss_type,
         timesteps=config.timesteps,           
         sampling_timesteps=config.sampling_timesteps,
+        noising_timesteps=config.noising_timesteps,
         is_loss_time_dependent=config.is_loss_time_dependent
     ).cuda()
 
