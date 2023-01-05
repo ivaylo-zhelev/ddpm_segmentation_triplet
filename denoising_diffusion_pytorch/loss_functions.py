@@ -5,6 +5,19 @@ def mse(anchor, positive, reduction,
         *args, **kwargs):
     return F.mse_loss(anchor, positive, reduction=reduction)
 
+def triplet_margin_loss(anchor, positive, negative, p=2.0, eps=1e-6, margin=1.0, reduction='none',
+                              *args, **kwargs):
+    loss = F.triplet_margin_loss(anchor, positive, negative,
+                                 p=p, eps=eps, margin=margin)
+    if reduction == 'mean':
+        loss = torch.mean(loss)
+    elif reduction == 'sum':
+        loss = torch.sum(loss)
+    else:
+        return loss
+
+    return loss
+
 def exact_triplet_margin_loss(anchor, positive, negative, p=2.0, eps=1e-6, margin=None, reduction='none',
                               *args, **kwargs):
     assert anchor.size() == positive.size(), "Input sizes between positive and negative must be equal."

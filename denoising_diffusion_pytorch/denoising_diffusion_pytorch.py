@@ -29,7 +29,7 @@ from accelerate import Accelerator
 
 from denoising_diffusion_pytorch.evaluation import EVAL_FUNCTIONS
 from denoising_diffusion_pytorch.loss_functions import (
-    mse, exact_triplet_margin_loss, regularized_triplet_loss, triplet_loss_dynamic_margin)
+    mse, triplet_margin_loss, exact_triplet_margin_loss, regularized_triplet_loss, triplet_loss_dynamic_margin)
 # constants
 
 ModelPrediction = namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
@@ -809,7 +809,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
     @property
     def loss_fn(self):
         if self.loss_type == "triplet":
-            return F.triplet_margin_loss
+            return triplet_margin_loss
         elif self.loss_type == "mse":
             return mse
         elif self.loss_type == "exact_triplet":
