@@ -1,11 +1,11 @@
-images_folder: /mnt/c/Users/ivayl/OneDrive/Documents/Bachelor_Thesis/dataset/images
-segmentation_folder: /mnt/c/Users/ivayl/OneDrive/Documents/Bachelor_Thesis/dataset/segmentations
-results_folder: /mnt/c/Users/ivayl/OneDrive/Documents/Bachelor_Thesis/dataset/results
+images_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320
+segmentation_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320
+results_folder: /home/s3782255/segmentation_ddpm/experiment_2/results
 
 dim: 64
 dim_mults: [1, 2, 4, 8]
 
-image_size: 636
+image_size: 320
 loss_type: mse
 timesteps: 1000           
 sampling_timesteps: 900
