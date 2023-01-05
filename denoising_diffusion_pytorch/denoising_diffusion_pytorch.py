@@ -454,10 +454,11 @@ class GaussianDiffusionBase(nn.Module):
         timesteps = 1000,
         objective = "pred_noise",
         sampling_timesteps = None,
+        noising_timesteps = None,
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
-        ddim_sampling_eta = 1.
+        ddim_sampling_eta = 0.
     ):
         super().__init__()
         assert not model.random_or_learned_sinusoidal_cond
@@ -490,8 +491,10 @@ class GaussianDiffusionBase(nn.Module):
         # sampling related parameters
 
         self.sampling_timesteps = default(sampling_timesteps, timesteps) # default num sampling timesteps to number of timesteps at training
-
+        
         assert self.sampling_timesteps <= timesteps
+        
+        self.noising_timesteps = noising_timesteps or self.sampling_timesteps
         self.is_ddim_sampling = self.sampling_timesteps < timesteps
         self.ddim_sampling_eta = ddim_sampling_eta
         # helper function to register buffer from float64 to float32
@@ -637,7 +640,7 @@ class GaussianDiffusionBase(nn.Module):
         times = list(reversed(times.int().tolist()))
         time_pairs = list(zip(times[:-1], times[1:])) # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
 
-        t_batched = torch.stack([torch.tensor(sampling_timesteps, device = device)] * batch)
+        t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
         if img is None:
             img = torch.randn(shape, device=device)
         else:
@@ -796,6 +799,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         regularize_to_white_image = True,
         loss_type = "triplet",
         is_loss_time_dependent = False,
+        use_ddim_sampling = False,
         *args,
         **kwargs
     ):
@@ -805,6 +809,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         self.regularization_margin = regularization_margin
         self.regularize_to_white_image = regularize_to_white_image
         self.is_loss_time_dependent = is_loss_time_dependent
+        self.is_ddim_sampling = self.is_ddim_sampling or use_ddim_sampling
 
     @property
     def loss_fn(self):

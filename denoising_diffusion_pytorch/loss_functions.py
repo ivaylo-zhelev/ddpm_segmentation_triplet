@@ -6,10 +6,8 @@ def mse(anchor, positive, reduction,
     return F.mse_loss(anchor, positive, reduction=reduction)
 
 def triplet_margin_loss(anchor, positive, negative, p=2.0, eps=1e-6, margin=1.0, reduction='none',
-                              *args, **kwargs):
-    return F.triplet_margin_loss(anchor, positive, negative,
-                                 p=p, eps=eps, margin=margin, reduction=reduction)
-
+                        *args, **kwargs):
+    return F.triplet_margin_loss(anchor, positive, negative, p=p, eps=eps, margin=margin, reduction=reduction)
 
 def exact_triplet_margin_loss(anchor, positive, negative, p=2.0, eps=1e-6, margin=None, reduction='none',
                               *args, **kwargs):
