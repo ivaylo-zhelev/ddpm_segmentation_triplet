@@ -674,7 +674,7 @@ class GaussianDiffusionBase(nn.Module):
                   c * pred_noise + \
                   sigma * noise
             
-            utils.save_image(img[0], noisy_image_path / f"denoised_t={ind}.png")
+            utils.save_image(img[0], noisy_image_path / f"denoised_t={ind}_nt={self.noising_timesteps}.png")
         self.milestone += 1
         img = unnormalize_to_zero_to_one(img)
         return img
