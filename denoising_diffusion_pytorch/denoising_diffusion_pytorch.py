@@ -1005,6 +1005,7 @@ class TrainerBase():
         self.convert_image_to = convert_image_to
         
         self.results_folder = Path(results_folder)
+        self.model.results_folder = self.results_folder
 
     @property
     def IS_SEGMENTATION_TRAINER(self):
