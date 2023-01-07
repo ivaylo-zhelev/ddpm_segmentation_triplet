@@ -6,7 +6,7 @@ dim: 64
 dim_mults: [1, 2, 4, 8]
 
 image_size: 320
-margin: 10.0
+margin: 20.0
 regularization_margin: 50.0
 regularize_to_white_image: True
 loss_type: regularized_triplet
