@@ -2,10 +2,10 @@
 #SBATCH --nodes=4
 #SBATCH --time=3-00:00
 #SBATCH --mem=4000
-#SBATCH --job-name=ddpm_segmentation
+#SBATCH --job-name=ddpm_segmentation_experiment_2
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --mail-user=i.zhelev@student.rug.nl
-#SBATCH --output=job-ddpm_segmentation.log
+#SBATCH --output=job-ddpm_segmentation_experiment_2.log
 
 
 module purge
