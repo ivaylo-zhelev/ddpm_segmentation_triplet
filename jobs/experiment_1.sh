@@ -14,4 +14,4 @@ module load CUDA/10.1.243-GCC-8.3.0
 
 source /data/s3782255/.envs/diffusion/bin/activate
 
-python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/training_script.py --config-file=/home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/experiment_1.yaml
+python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/training_script.py --config-file=/home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_1.yaml
