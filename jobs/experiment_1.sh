@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --nodes=4
 #SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
 #SBATCH --time=3-00:00
-#SBATCH --mem=4000
+#SBATCH --mem=8000
 #SBATCH --job-name=ddpm_segmentation_experiment_1
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=i.zhelev@student.rug.nl
