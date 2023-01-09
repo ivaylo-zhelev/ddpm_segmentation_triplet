@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:v100:1
 #SBATCH --time=3-00:00
-#SBATCH --mem=8000
+#SBATCH --mem=10000
 #SBATCH --job-name=ddpm_segmentation_experiment_1
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=i.zhelev@student.rug.nl
@@ -12,6 +12,7 @@
 module purge
 module load Python/3.8.6-GCCcore-10.2.0
 module load CUDA
+module load Boost
 
 source /data/s3782255/.envs/diffusion/bin/activate
 
