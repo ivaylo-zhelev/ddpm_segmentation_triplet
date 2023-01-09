@@ -810,7 +810,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
     @property
     def loss_fn(self):
         if self.loss_type == "triplet":
-            return F.triplet_margin_loss
+            return triplet_margin_loss
         elif self.loss_type == "mse":
             return mse
         elif self.loss_type == "exact_triplet":
