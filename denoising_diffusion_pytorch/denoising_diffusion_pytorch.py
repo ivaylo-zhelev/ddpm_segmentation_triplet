@@ -581,7 +581,11 @@ class GaussianDiffusionBase(nn.Module):
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
         preds = self.model_predictions(x, t, x_self_cond)
         x_start = preds.pred_x_start
-
+        noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
+        noisy_image_path.mkdir(exist_ok=True, parents=True)
+        
+        utils.save_image(x_start[0], noisy_image_path / f"pred_start_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}")
+        utils.save_image(preds.pred_noise[0], noisy_image_path / f"pred_noise_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}")
         if clip_denoised:
             x_start.clamp_(-1., 1.)
 
@@ -657,6 +661,7 @@ class GaussianDiffusionBase(nn.Module):
             self_cond = x_start if self.self_condition else None
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, self_cond, clip_x_start = clip_denoised)
             utils.save_image(pred_noise[0], noisy_image_path / f"pred_noise_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}")
+            utils.save_image(x_start[0], noisy_image_path / f"pred_start_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}")
             if time_next < 0:
                 img = x_start
                 continue
