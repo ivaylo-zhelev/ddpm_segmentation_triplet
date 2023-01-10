@@ -665,7 +665,8 @@ class GaussianDiffusionBase(nn.Module):
             if time_next < 0:
                 img = x_start
                 continue
-
+            img = pred_noise
+            continue
             alpha = self.alphas_cumprod[time]
             alpha_next = self.alphas_cumprod[time_next]
 
