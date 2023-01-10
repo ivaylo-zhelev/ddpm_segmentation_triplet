@@ -619,7 +619,7 @@ class GaussianDiffusionBase(nn.Module):
         if img is None:
             img = torch.randn(shape, device=device)
         else:
-            t_batched = torch.stack([torch.tensor(self.sampling_timesteps, device = device)] * batch)
+            t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
             noise = default(noise, lambda: torch.randn_like(img))
             imgs = self.q_sample(imgs, t_batched, noise=noise)
 
