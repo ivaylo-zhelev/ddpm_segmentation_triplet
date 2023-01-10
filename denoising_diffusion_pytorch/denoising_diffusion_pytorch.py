@@ -837,6 +837,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
     def p_losses(self, x_start, b_start, t, noise=None):
+        utils.save_image(x_start[0], self.training_image_path / "from_p_losses")
         if x_start.shape != b_start.shape:
             raise ValueError("The dimensionality of the image and the segmentation maps must be the same")
 
@@ -858,14 +859,13 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # predict and take gradient step
         model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
 
+        utils.save_image(x_start[0], self.training_image_path / "right_before")
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
         if self.step % 20 == 0:
-            training_image_path = self.results_folder / "training"
-            training_image_path.mkdir(exist_ok=True, parents=True)
-            utils.save_image(model_out[0], training_image_path / f"model_out_{self.step}_t={t[0]}.png")
-            utils.save_image(positive[0], training_image_path / f"positive_{self.step}_t={t[0]}.png")
-            utils.save_image(negative[0], training_image_path / f"negative_{self.step}_t={t[0]}.png")
+            utils.save_image(model_out[0], self.training_image_path / f"model_out_{self.step}_t={t[0]}.png")
+            utils.save_image(positive[0], self.training_image_path / f"positive_{self.step}_t={t[0]}.png")
+            utils.save_image(negative[0], self.training_image_path / f"negative_{self.step}_t={t[0]}.png")
         
         loss = self.loss_fn(anchor=model_out,
                             positive=positive,
@@ -887,6 +887,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         return ModelPrediction(model_output, maybe_clip(x))"""
 
     def forward(self, sample_pair, *args, **kwargs):
+        self.training_image_path = self.results_folder / "training"
+        self.training_image_path.mkdir(exist_ok=True, parents=True)
         img, segmentation = torch.unbind(sample_pair, dim=1)
         b, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
         _, _, h_segm, w_segm = segmentation.shape
@@ -895,6 +897,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
+        utils.save_image(img[0], self.training_image_path / "from_forward")
         return self.p_losses(img, segmentation, t, *args, **kwargs)
 
 
