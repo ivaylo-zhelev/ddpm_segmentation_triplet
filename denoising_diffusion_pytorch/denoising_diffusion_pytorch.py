@@ -819,6 +819,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # This is because the target is the segmentation map which is not an exact function of the input images
         # noise
         self.objective = "pred_x0"
+        self.step = 0
 
     @property
     def loss_fn(self):
@@ -859,7 +860,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
-        if step % 20 == 0:
+        if self.step % 20 == 0:
             training_image_path = self.results_path / "training"
             training_image_path.mkdir(exist_ok=True, parents=True)
             utils.save_image(model_out[0], training_image_path / f"model_out_{self.step}_t={t[0]}.png")
@@ -1161,6 +1162,7 @@ class TrainerBase():
                 accelerator.wait_for_everyone()
 
                 self.step += 1
+                self.model.step += 1
                 if accelerator.is_main_process:
                     self.ema.to(device)
                     self.ema.update()
