@@ -10,9 +10,9 @@ margin: 20.0
 regularization_margin: 50.0
 regularize_to_white_image: True
 loss_type: regularized_triplet
-timesteps: 1000          
-sampling_timesteps: 50
-noising_timesteps: 20
+timesteps: 100          
+sampling_timesteps: 80
+noising_timesteps: 50
 ddim_sampling_eta: 0.0
 is_loss_time_dependent: True
 
