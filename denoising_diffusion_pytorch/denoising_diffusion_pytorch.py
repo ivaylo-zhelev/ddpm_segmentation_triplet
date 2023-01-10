@@ -806,6 +806,10 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         self.regularize_to_white_image = regularize_to_white_image
         self.is_loss_time_dependent = is_loss_time_dependent
         self.is_ddim_sampling = self.is_ddim_sampling or use_ddim_sampling
+        # The objective for this class should always be pred_x_start since we are not predicting the noise.
+        # This is because the target is the segmentation map which is not an exact function of the input images
+        # noise
+        self.objective = "pred_x0"
 
     @property
     def loss_fn(self):
@@ -842,7 +846,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                 x_self_cond.detach_()
 
         # predict and take gradient step
-        model_out = self.model(x, t, x_self_cond)
+        model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
 
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
