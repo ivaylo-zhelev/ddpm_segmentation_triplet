@@ -861,7 +861,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
         if self.step % 20 == 0:
-            training_image_path = self.results_path / "training"
+            training_image_path = self.results_folder / "training"
             training_image_path.mkdir(exist_ok=True, parents=True)
             utils.save_image(model_out[0], training_image_path / f"model_out_{self.step}_t={t[0]}.png")
             utils.save_image(positive, training_image_path / f"positive_{self.step}_t={t[0]}.png")
