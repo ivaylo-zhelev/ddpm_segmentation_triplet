@@ -837,7 +837,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
     def p_losses(self, x_start, b_start, t, noise=None):
-        utils.save_image(x_start[0], self.training_image_path / "from_p_losses")
+        utils.save_image(x_start[0], self.training_image_path / "from_p_losses.png")
         if x_start.shape != b_start.shape:
             raise ValueError("The dimensionality of the image and the segmentation maps must be the same")
 
@@ -859,7 +859,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # predict and take gradient step
         model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
 
-        utils.save_image(x_start[0], self.training_image_path / "right_before")
+        utils.save_image(x_start[0], self.training_image_path / "right_before.png")
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
         if self.step % 20 == 0:
@@ -897,7 +897,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
-        utils.save_image(img[0], self.training_image_path / "from_forward")
+        utils.save_image(img[0], self.training_image_path / "from_forward.png")
         return self.p_losses(img, segmentation, t, *args, **kwargs)
 
 
