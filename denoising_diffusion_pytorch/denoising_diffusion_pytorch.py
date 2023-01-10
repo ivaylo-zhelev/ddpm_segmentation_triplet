@@ -1266,6 +1266,7 @@ class TrainerSegmentation(TrainerBase):
                 imgs, gt_segm = torch.unbind(data, dim=1)
                 noisy_image_path = self.results_folder / f"noisy_images_{self.model.milestone}_t={self.model.sampling_timesteps}_nt={self.model.noising_timesteps}"
                 noisy_image_path.mkdir(exist_ok=True, parents=True)
+                self.model.milestone += 1
                 print(self.model.milestone)
                 utils.save_image(gt_segm[0], noisy_image_path / "ground_truth.png")
                 self.infer_batch(
