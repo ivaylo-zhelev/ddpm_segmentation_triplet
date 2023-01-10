@@ -28,6 +28,7 @@ class TrainingConfig:
     timesteps: int = 1000           
     sampling_timesteps: int = 100
     noising_timesteps: Optional[int] = None
+    ddim_sampling_eta: float = 0.0
     is_loss_time_dependent: bool = False
 
     optimizer: str = "adam"
@@ -77,6 +78,7 @@ def train(config):
         timesteps=config.timesteps,           
         sampling_timesteps=config.sampling_timesteps,
         noising_timesteps=config.noising_timesteps,
+        ddim_sampling_eta=config.ddim_sampling_eta,
         is_loss_time_dependent=config.is_loss_time_dependent
     ).cuda()
 
