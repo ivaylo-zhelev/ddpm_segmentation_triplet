@@ -656,7 +656,7 @@ class GaussianDiffusionBase(nn.Module):
             time_cond = torch.full((batch,), time, device=device, dtype=torch.long)
             self_cond = x_start if self.self_condition else None
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, self_cond, clip_x_start = clip_denoised)
-
+            utils.save_image(pred_noise[0], noisy_image_path / f"pred_noise_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}")
             if time_next < 0:
                 img = x_start
                 continue
