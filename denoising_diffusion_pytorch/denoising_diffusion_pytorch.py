@@ -644,7 +644,6 @@ class GaussianDiffusionBase(nn.Module):
         if img is None:
             img = torch.randn(shape, device=device)
         else:
-            print("Good!")
             noise = default(noise, lambda: torch.randn_like(img))
             img = self.q_sample(img, t_batched, noise=noise)
 
