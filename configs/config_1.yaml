@@ -9,7 +9,9 @@ image_size: 320
 margin: 8.0
 loss_type: triplet
 timesteps: 1000           
-sampling_timesteps: 900
+sampling_timesteps: 50
+noising_timesteps: 20
+ddim_sampling_eta: 0.0
 is_loss_time_dependent: True
 
 optimizer: rmsprop
