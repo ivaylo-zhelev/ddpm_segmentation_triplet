@@ -579,6 +579,7 @@ class GaussianDiffusionBase(nn.Module):
 
 
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
+        assert False, "p_mean_variance is used during training"
         preds = self.model_predictions(x, t, x_self_cond)
         x_start = preds.pred_x_start
         noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
