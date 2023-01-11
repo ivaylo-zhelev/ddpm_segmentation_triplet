@@ -585,8 +585,8 @@ class GaussianDiffusionBase(nn.Module):
         noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
         noisy_image_path.mkdir(exist_ok=True, parents=True)
         
-        utils.save_image(x_start[0], noisy_image_path / f"pred_start_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}.png")
-        utils.save_image(preds.pred_noise[0], noisy_image_path / f"pred_noise_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}.png")
+        utils.save_image(unnormalize_to_zero_to_one(x_start[0]), noisy_image_path / f"pred_start_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}.png")
+        utils.save_image(unnormalize_to_zero_to_one(preds.pred_noise[0]), noisy_image_path / f"pred_noise_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}.png")
         if clip_denoised:
             x_start.clamp_(-1., 1.)
 
@@ -650,19 +650,19 @@ class GaussianDiffusionBase(nn.Module):
             img = torch.randn(shape, device=device)
         else:
             noise = default(noise, lambda: torch.randn_like(img))
-            img = self.q_sample(img, t_batched, noise=noise)
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
         noisy_image_path.mkdir(exist_ok=True, parents=True)
-        utils.save_image(img[0], noisy_image_path / "original.png")
+        utils.save_image(unnormalize_to_zero_to_one(img[0]), noisy_image_path / "original.png")
         x_start = None
 
         for ind, (time, time_next) in enumerate(tqdm(time_pairs, desc = 'sampling loop time step')):
             time_cond = torch.full((batch,), time, device=device, dtype=torch.long)
             self_cond = x_start if self.self_condition else None
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, self_cond, clip_x_start = clip_denoised)
-            utils.save_image(pred_noise[0], noisy_image_path / f"pred_noise_{self.milestone}_t={ind}_nt={self.noising_timesteps}.png")
-            utils.save_image(x_start[0], noisy_image_path / f"pred_start_{self.milestone}_t={ind}_nt={self.noising_timesteps}.png")
+            utils.save_image(unnormalize_to_zero_to_one(pred_noise[0]), noisy_image_path / f"pred_noise_{self.milestone}_t={ind}_nt={self.noising_timesteps}.png")
+            utils.save_image(unnormalize_to_zero_to_one(x_start[0]), noisy_image_path / f"pred_start_{self.milestone}_t={ind}_nt={self.noising_timesteps}.png")
             if time_next < 0:
                 img = x_start
                 continue
@@ -679,7 +679,7 @@ class GaussianDiffusionBase(nn.Module):
                   c * pred_noise + \
                   sigma * noise
             
-            utils.save_image(img[0], noisy_image_path / f"denoised_t={ind}.png")
+            utils.save_image(unnormalize_to_zero_to_one(img[0]), noisy_image_path / f"denoised_t={ind}.png")
         self.milestone += 1
         img = unnormalize_to_zero_to_one(img)
         return img
@@ -837,7 +837,6 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
     def p_losses(self, x_start, b_start, t, noise=None):
-        utils.save_image(x_start[0], self.training_image_path / "from_p_losses.png")
         if x_start.shape != b_start.shape:
             raise ValueError("The dimensionality of the image and the segmentation maps must be the same")
 
@@ -859,13 +858,12 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # predict and take gradient step
         model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
 
-        utils.save_image(x_start[0], self.training_image_path / "right_before.png")
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
-        if self.step % 20 == 0:
+        """if self.step % 20 == 0:
             utils.save_image(model_out[0], self.training_image_path / f"model_out_{self.step}_t={t[0]}.png")
             utils.save_image(positive[0], self.training_image_path / f"positive_{self.step}_t={t[0]}.png")
-            utils.save_image(negative[0], self.training_image_path / f"negative_{self.step}_t={t[0]}.png")
+            utils.save_image(negative[0], self.training_image_path / f"negative_{self.step}_t={t[0]}.png")"""
         
         loss = self.loss_fn(anchor=model_out,
                             positive=positive,
@@ -896,9 +894,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         assert h == h_segm and w == w_segm, f"the images and their segmentation must be the same size: {img_size}"
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
-        utils.save_image(img[0], self.training_image_path / "before_normalization.png")
         img = normalize_to_neg_one_to_one(img)
-        utils.save_image(img[0], self.training_image_path / "from_forward.png")
+        segmentation = normalize_to_neg_one_to_one(segmentation)
         return self.p_losses(img, segmentation, t, *args, **kwargs)
 
 
