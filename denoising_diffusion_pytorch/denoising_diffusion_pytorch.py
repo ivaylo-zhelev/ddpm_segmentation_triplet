@@ -896,6 +896,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         assert h == h_segm and w == w_segm, f"the images and their segmentation must be the same size: {img_size}"
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
+        utils.save_image(img[0], self.training_image_path / "before_normalization.png")
         img = normalize_to_neg_one_to_one(img)
         utils.save_image(img[0], self.training_image_path / "from_forward.png")
         return self.p_losses(img, segmentation, t, *args, **kwargs)
