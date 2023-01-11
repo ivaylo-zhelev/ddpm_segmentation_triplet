@@ -566,7 +566,7 @@ class GaussianDiffusionBase(nn.Module):
         return sample_fn((batch_size, channels, image_size, image_size), img=imgs)
 
     @torch.no_grad()
-    def p_sample_loop(self, shape, imgs = None, noise = None):
+    def p_sample_loop(self, shape, img = None, noise = None):
         batch, device = shape[0], self.betas.device
 
         if img is None:
@@ -574,7 +574,7 @@ class GaussianDiffusionBase(nn.Module):
         else:
             t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
             noise = default(noise, lambda: torch.randn_like(img))
-            imgs = self.q_sample(imgs, t_batched, noise=noise)
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         x_start = None
 
@@ -598,7 +598,7 @@ class GaussianDiffusionBase(nn.Module):
             img = torch.randn(shape, device=device)
         else:
             noise = default(noise, lambda: torch.randn_like(img))
-            img = self.q_sample(img, t_batched, noise=noise)
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         x_start = None
 
@@ -782,6 +782,7 @@ class GaussianDiffusion(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
+        segmentation = normalize_to_neg_one_to_one(segmentation)
         return self.p_losses(img, t, *args, **kwargs)
 
 
