@@ -454,6 +454,7 @@ class GaussianDiffusionBase(nn.Module):
         timesteps = 1000,
         sampling_timesteps = None,
         noising_timesteps = None,
+        objective = 'pred_noise',
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
@@ -465,6 +466,9 @@ class GaussianDiffusionBase(nn.Module):
         self.model = model
         self.channels = self.model.channels
         self.self_condition = self.model.self_condition
+        self.objective = objective
+
+        assert objective in {'pred_noise', 'pred_x0', 'pred_v'}, 'objective must be either pred_noise (predict noise) or pred_x0 (predict image start) or pred_v (predict v [v-parameterization as defined in appendix D of progressive distillation paper, used in imagen-video successfully])'
 
         self.image_size = image_size
 
@@ -530,6 +534,46 @@ class GaussianDiffusionBase(nn.Module):
             extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
             extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
         )
+
+    def predict_noise_from_start(self, x_t, t, x0):
+        return (
+            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
+            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+        )
+
+    def predict_v(self, x_start, t, noise):
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * noise -
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_start
+        )
+
+    def predict_start_from_v(self, x_t, t, v):
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
+        )
+
+    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
+        model_output = self.model(x, t, x_self_cond)
+        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
+
+        if self.objective == 'pred_noise':
+            pred_noise = model_output
+            x_start = self.predict_start_from_noise(x, t, pred_noise)
+            x_start = maybe_clip(x_start)
+
+        elif self.objective == 'pred_x0':
+            x_start = model_output
+            x_start = maybe_clip(x_start)
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        elif self.objective == 'pred_v':
+            v = model_output
+            x_start = self.predict_start_from_v(x, t, v)
+            x_start = maybe_clip(x_start)
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        return ModelPrediction(pred_noise, x_start)
 
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
         preds = self.model_predictions(x, t, x_self_cond)
@@ -644,7 +688,6 @@ class GaussianDiffusion(GaussianDiffusionBase):
         timesteps = 1000,
         sampling_timesteps = None,
         loss_type = 'l1',
-        objective = 'pred_noise',
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
@@ -661,57 +704,7 @@ class GaussianDiffusion(GaussianDiffusionBase):
             ddim_sampling_eta=ddim_sampling_eta
         )
         assert not (type(self) == GaussianDiffusion and model.channels != model.out_dim)
-        self.objective = objective
-
-        assert objective in {'pred_noise', 'pred_x0', 'pred_v'}, 'objective must be either pred_noise (predict noise) or pred_x0 (predict image start) or pred_v (predict v [v-parameterization as defined in appendix D of progressive distillation paper, used in imagen-video successfully])'
-
         self.loss_type = loss_type
-
-    def predict_start_from_noise(self, x_t, t, noise):
-        return (
-            extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
-        )
-
-    def predict_noise_from_start(self, x_t, t, x0):
-        return (
-            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
-        )
-
-    def predict_v(self, x_start, t, noise):
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * noise -
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_start
-        )
-
-    def predict_start_from_v(self, x_t, t, v):
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
-        )
-
-    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
-        model_output = self.model(x, t, x_self_cond)
-        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
-
-        if self.objective == 'pred_noise':
-            pred_noise = model_output
-            x_start = self.predict_start_from_noise(x, t, pred_noise)
-            x_start = maybe_clip(x_start)
-
-        elif self.objective == 'pred_x0':
-            x_start = model_output
-            x_start = maybe_clip(x_start)
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        elif self.objective == 'pred_v':
-            v = model_output
-            x_start = self.predict_start_from_v(x, t, v)
-            x_start = maybe_clip(x_start)
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        return ModelPrediction(pred_noise, x_start)
 
     @torch.no_grad()
     def interpolate(self, x1, x2, t = None, lam = 0.5):
@@ -862,13 +855,6 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return loss.mean()
-
-    def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
-        model_output = self.model(x, t, x_self_cond)
-        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
-        x_start = self.predict_start_from_noise(x, t, model_output)
-
-        return ModelPrediction(model_output, maybe_clip(x))
 
     def forward(self, sample_pair, *args, **kwargs):
         img, segmentation = torch.unbind(sample_pair, dim=1)
