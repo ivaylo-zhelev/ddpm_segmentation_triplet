@@ -1245,7 +1245,8 @@ class TrainerSegmentation(TrainerBase):
                     original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None,
                     ground_truth_segmentation=gt_segm,
                     start_ind=batch_num * self.batch_size,
-                    eval_metrics=tuple()
+                    eval_metrics=tuple(),
+                    is_first_batch=batch_num == 0
                 )
 
             self.accelerator.print(f'Validation loss: {total_loss:.4f}')
@@ -1303,7 +1304,8 @@ class TrainerSegmentation(TrainerBase):
         original_image_folder = None,
         threshold = 0.5,
         start_ind = 0,
-        eval_metrics = EVAL_FUNCTIONS.keys()
+        eval_metrics = EVAL_FUNCTIONS.keys(),
+        is_first_batch = False
     ):
         results_folder = results_folder or self.results_folder
         results_folder.mkdir(exist_ok=True, parents=True)
@@ -1320,25 +1322,26 @@ class TrainerSegmentation(TrainerBase):
 
         eval_results = DataFrame()
         for ind, (image, segmentation, ground_truth) in enumerate(zip(imgs_list, segm_list, gt_list)):
-            segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
-            ground_truth_filename = None
-            original_image_filename = None
+            if is_first_batch:
+                segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
+                ground_truth_filename = None
+                original_image_filename = None
 
-            if ground_truths_folder and ground_truth is not None:
-                ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
+                if ground_truths_folder and ground_truth is not None:
+                    ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        ground_truth,
+                        ground_truth_filename)
+
+                if original_image_folder:
+                    original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        image,
+                        original_image_filename)
+
                 utils.save_image(
-                    ground_truth,
-                    ground_truth_filename)
-
-            if original_image_folder:
-                original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
-                utils.save_image(
-                    image,
-                    original_image_filename)
-
-            utils.save_image(
-                segmentation,
-                segmentation_filename)  
+                    segmentation,
+                    segmentation_filename)  
 
             if eval_metrics and ground_truth_segmentation is not None:
                 image_info = {
