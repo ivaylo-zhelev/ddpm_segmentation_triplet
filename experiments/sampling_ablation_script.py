@@ -6,7 +6,7 @@ from experiments.setup import setup_trainer
 
 
 def ablate(config: TrainingConfig):
-    trainer.load()
+    trainer = setup_trainer(config)
     trainer.load(config.load_milestone)
     trainer.test()
 
