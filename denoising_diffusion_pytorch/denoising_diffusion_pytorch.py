@@ -455,7 +455,6 @@ class GaussianDiffusionBase(nn.Module):
         objective = "pred_noise",
         sampling_timesteps = None,
         noising_timesteps = None,
-        objective = 'pred_noise',
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
@@ -581,10 +580,6 @@ class GaussianDiffusionBase(nn.Module):
 
         return ModelPrediction(pred_noise, x_start)
 
-<<<<<<< HEAD
-
-=======
->>>>>>> triplet
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
         assert False, "p_mean_variance is used during training"
         preds = self.model_predictions(x, t, x_self_cond)
