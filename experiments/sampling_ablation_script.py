@@ -5,12 +5,9 @@ from experiments.config import TrainingConfig
 from experiments.setup import setup_trainer
 
 
-def train(config: TrainingConfig):
-    trainer = setup_trainer(config)
-    if config.load_milestone:
-        trainer.load(config.load_milestone)
-
-    trainer.train()
+def ablate(config: TrainingConfig):
+    trainer.load()
+    trainer.load(config.load_milestone)
     trainer.test()
 
 
@@ -25,7 +22,7 @@ def main():
         dict_config_params = yaml.safe_load(file)
 
     config = TrainingConfig(**dict_config_params)
-    train(config)
+    ablate(config)
 
 
 if __name__ == "__main__":
