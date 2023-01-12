@@ -8,11 +8,7 @@ dim_mults: [1, 2, 4, 8]
 image_size: 320
 margin: 8.0
 loss_type: triplet
-<<<<<<< HEAD
 timesteps: 100           
-=======
-timesteps: 100          
->>>>>>> triplet
 sampling_timesteps: 80
 noising_timesteps: 50
 ddim_sampling_eta: 0.0
@@ -27,10 +23,7 @@ step_sizes: [0.000001, 50]
 
 validate_every: 5000
 save_every: 10000
-<<<<<<< HEAD
-=======
 load_milestone: 1
->>>>>>> triplet
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
 train_batch_size: 8
