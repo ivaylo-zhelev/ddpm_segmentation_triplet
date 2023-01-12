@@ -14,6 +14,6 @@ module load Python/3.8.6-GCCcore-10.2.0
 module load CUDA
 module load Boost
 
-source /data/s3782255/.envs/diffusion/bin/activate
+source /data/s3782255/.envs/diffusion_segm/bin/activate
 
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/training_script.py --config-file=/home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_2.yaml

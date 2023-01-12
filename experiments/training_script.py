@@ -42,6 +42,7 @@ class TrainingConfig:
 
     validate_every: int = 2000
     save_every: int = 2000
+    load_milestone: int = 1
     data_split: Tuple[float, float, float] = (0.8, 0.1, 0.1)
     num_samples: int = 25
     train_batch_size: int = 8
@@ -107,6 +108,9 @@ def train(config):
         ema_decay=config.ema_decay,
         amp=True
     )
+
+    if config.load_milestone:
+        trainer.load(config.load_milestone)
 
     trainer.train()
     trainer.test()

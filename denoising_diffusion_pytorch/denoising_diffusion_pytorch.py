@@ -455,6 +455,7 @@ class GaussianDiffusionBase(nn.Module):
         objective = "pred_noise",
         sampling_timesteps = None,
         noising_timesteps = None,
+        objective = 'pred_noise',
         beta_schedule = 'cosine',
         p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
@@ -466,6 +467,9 @@ class GaussianDiffusionBase(nn.Module):
         self.model = model
         self.channels = self.model.channels
         self.self_condition = self.model.self_condition
+        self.objective = objective
+
+        assert objective in {'pred_noise', 'pred_x0', 'pred_v'}, 'objective must be either pred_noise (predict noise) or pred_x0 (predict image start) or pred_v (predict v [v-parameterization as defined in appendix D of progressive distillation paper, used in imagen-video successfully])'
 
         self.image_size = image_size
         self.milestone = 0
@@ -577,7 +581,10 @@ class GaussianDiffusionBase(nn.Module):
 
         return ModelPrediction(pred_noise, x_start)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> triplet
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
         assert False, "p_mean_variance is used during training"
         preds = self.model_predictions(x, t, x_self_cond)
@@ -618,7 +625,7 @@ class GaussianDiffusionBase(nn.Module):
         return sample_fn((batch_size, channels, image_size, image_size), img=imgs)
 
     @torch.no_grad()
-    def p_sample_loop(self, shape, imgs = None, noise = None):
+    def p_sample_loop(self, shape, img = None, noise = None):
         batch, device = shape[0], self.betas.device
 
         if img is None:
@@ -626,7 +633,7 @@ class GaussianDiffusionBase(nn.Module):
         else:
             t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
             noise = default(noise, lambda: torch.randn_like(img))
-            imgs = self.q_sample(imgs, t_batched, noise=noise)
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         x_start = None
 
@@ -721,7 +728,6 @@ class GaussianDiffusion(GaussianDiffusionBase):
         
         self.loss_type = loss_type
 
-    
     @torch.no_grad()
     def interpolate(self, x1, x2, t = None, lam = 0.5):
         b, *_, device = *x1.shape, x1.device
@@ -791,6 +797,7 @@ class GaussianDiffusion(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
+        segmentation = normalize_to_neg_one_to_one(segmentation)
         return self.p_losses(img, t, *args, **kwargs)
 
 
@@ -876,13 +883,6 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return loss.mean()
-
-    """def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
-        model_output = self.model(x, t, x_self_cond)
-        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
-        x_start = self.predict_start_from_noise(x, t, model_output)
-
-        return ModelPrediction(model_output, maybe_clip(x))"""
 
     def forward(self, sample_pair, *args, **kwargs):
         self.training_image_path = self.results_folder / "training"
@@ -1296,7 +1296,8 @@ class TrainerSegmentation(TrainerBase):
                     original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None,
                     ground_truth_segmentation=gt_segm,
                     start_ind=batch_num * self.batch_size,
-                    eval_metrics=tuple()
+                    eval_metrics=tuple(),
+                    is_first_batch=batch_num == 0
                 )
 
             self.accelerator.print(f'Validation loss: {total_loss:.4f}')
@@ -1354,7 +1355,8 @@ class TrainerSegmentation(TrainerBase):
         original_image_folder = None,
         threshold = 0.5,
         start_ind = 0,
-        eval_metrics = EVAL_FUNCTIONS.keys()
+        eval_metrics = EVAL_FUNCTIONS.keys(),
+        is_first_batch = False
     ):
         results_folder = results_folder or self.results_folder
         results_folder.mkdir(exist_ok=True, parents=True)
@@ -1371,25 +1373,26 @@ class TrainerSegmentation(TrainerBase):
 
         eval_results = DataFrame()
         for ind, (image, segmentation, ground_truth) in enumerate(zip(imgs_list, segm_list, gt_list)):
-            segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
-            ground_truth_filename = None
-            original_image_filename = None
+            if is_first_batch:
+                segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
+                ground_truth_filename = None
+                original_image_filename = None
 
-            if ground_truths_folder and ground_truth is not None:
-                ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
+                if ground_truths_folder and ground_truth is not None:
+                    ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        ground_truth,
+                        ground_truth_filename)
+
+                if original_image_folder:
+                    original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        image,
+                        original_image_filename)
+
                 utils.save_image(
-                    ground_truth,
-                    ground_truth_filename)
-
-            if original_image_folder:
-                original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
-                utils.save_image(
-                    image,
-                    original_image_filename)
-
-            utils.save_image(
-                segmentation,
-                segmentation_filename)  
+                    segmentation,
+                    segmentation_filename)  
 
             if eval_metrics and ground_truth_segmentation is not None:
                 image_info = {
