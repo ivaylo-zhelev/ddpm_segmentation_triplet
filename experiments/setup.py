@@ -1,7 +1,7 @@
 from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMapping, TrainerSegmentation
 from experiments.config import TrainingConfig
 
-def setup_trainer(config: TrainingConfig) 
+def setup_trainer(config: TrainingConfig):
     model = Unet(
         dim=config.dim,
         dim_mults=config.dim_mults
