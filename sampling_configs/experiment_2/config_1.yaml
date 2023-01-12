@@ -1,0 +1,32 @@
+images_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320
+segmentation_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320
+results_folder: /data/pg-organoid_data/segmentation_ddpm/results/experiment_2
+
+dim: 64
+dim_mults: [1, 2, 4, 8]
+
+image_size: 320
+loss_type: mse
+timesteps: 100          
+sampling_timesteps: 20
+noising_timesteps: 20
+ddim_sampling_eta: 0.0
+is_loss_time_dependent: True
+
+optimizer: rmsprop
+lr_decay: 0
+weight_decay: 0.001
+rms_prop_alpha: 0.99
+momentum: 0.9
+step_sizes: [0.000001, 50]
+
+validate_every: 5000
+save_every: 10000
+load_milestone: 1
+data_split: [0.8, 0.1, 0.1]
+num_samples: 25
+train_batch_size: 8
+train_lr: 0.000008
+train_num_steps: 1000000 
+gradient_accumulate_every: 2
+ema_decay: 0.995
