@@ -1,8 +1,11 @@
 from typing import Tuple, Union, Optional, List
 from pathlib import Path
 from dataclasses import dataclass, fields, _MISSING_TYPE
+from copy import deepcopy
+from multiprocessing import Pool
 
 from itertools import product
+import numpy as np
 
 
 @dataclass
@@ -20,7 +23,8 @@ class SamplingConfig:
             field_value = getattr(self, field.name)
             if type(field_value) == str:
                 try:
-                    value_as_list = list(range(*field_value.split(":")))
+                    start, stop, step = field_value.split(":")
+                    value_as_list = list(np.arange(float(start), float(stop), float(step)))
                     setattr(self, field.name, value_as_list)
                 except AttributeError:
                     assert print(
