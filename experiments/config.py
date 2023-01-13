@@ -15,8 +15,6 @@ class SamplingConfig:
     noising_timesteps: Union[str, List[int]]
     ddim_sampling_eta: Union[str, List[float]]
 
-    num_workers: int = 1
-
     def __post_init__(self):
         for field in fields(self):
             field_value = getattr(self, field.name)
@@ -28,9 +26,7 @@ class SamplingConfig:
                 except AttributeError:
                     assert print(
                         f"{field.name} must be either a list of possible values or follow the format of start:end:step if it is an interval"
-                    ) 
-
-        self.num_workers = self.num_workers or 1
+                    )
 
 
 @dataclass

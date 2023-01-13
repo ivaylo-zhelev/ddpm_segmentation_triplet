@@ -4,8 +4,6 @@ import ruamel.yaml as yaml
 from experiments.config import TrainingConfig, SamplingConfig
 from experiments.setup_trainer import setup_trainer
 
-from multiprocessing import Pool
-
 
 def sample(config):
     trainer = setup_trainer(config)
@@ -15,11 +13,8 @@ def sample(config):
 
 def run_ablation(training_config: TrainingConfig, sampling_config: SamplingConfig):
     sampling_configurations = TrainingConfig.generate_sampling_configs(training_config, sampling_config)
-    if sampling_config.num_workers > 1:
-        with Pool(sampling_config.num_workers) as p:
-            p.map(sample, sampling_configurations)
-    else:
-        [sample(config) for config in sampling_configurations]
+    [sample(config) for config in sampling_configurations]
+
 
 def main():
     arg_parser = ArgumentParser("Command line interface for running the training and testing of the model")
