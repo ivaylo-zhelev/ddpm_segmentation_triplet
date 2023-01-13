@@ -1222,6 +1222,7 @@ class TrainerSegmentation(TrainerBase):
         segmentations_folder,
         validate_every = 1000,
         save_every = 1000,
+        only_save_first_batch = True,
         data_split = (0.8, 0.1, 0.1),
         eval_metrics = EVAL_FUNCTIONS.keys(),
         seed = 42,
@@ -1231,6 +1232,7 @@ class TrainerSegmentation(TrainerBase):
         super().__init__(diffusion_model, *args, **kwargs)
         self.validate_every = validate_every
         self.save_every = save_every
+        self.only_save_first_batch = only_save_first_batch
         self.has_already_validated = False
         self.eval_metrics = eval_metrics
 
@@ -1371,7 +1373,7 @@ class TrainerSegmentation(TrainerBase):
             segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
             ground_truth_filename = None
             original_image_filename = None
-            if is_first_batch:
+            if is_first_batch or not self.only_save_first_batch:
                 if ground_truths_folder and ground_truth is not None:
                     ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
                     utils.save_image(
