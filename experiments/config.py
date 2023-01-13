@@ -7,6 +7,10 @@ from itertools import product
 import numpy as np
 
 
+def str_list_to_appropriate_type(str_list: List[str]) -> Union[int, float]:
+    return [float(el) if ("." in el or "e" in el) else int(el) for el in str_list]
+
+
 @dataclass
 class SamplingConfig:
     load_milestone: Union[str, List[int]]
@@ -20,8 +24,8 @@ class SamplingConfig:
             field_value = getattr(self, field.name)
             if type(field_value) == str:
                 try:
-                    start, stop, step = field_value.split(":")
-                    value_as_list = list(np.arange(float(start), float(stop), float(step)))
+                    start, stop, step = str_list_to_appropriate_type(field_value.split(":"))
+                    value_as_list = list(np.arange(start, stop, step))
                     setattr(self, field.name, value_as_list)
                 except AttributeError:
                     assert print(

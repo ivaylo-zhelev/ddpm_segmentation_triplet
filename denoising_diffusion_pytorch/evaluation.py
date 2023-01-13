@@ -1,5 +1,5 @@
 from torchmetrics.functional.image import structural_similarity_index_measure
-from torchmetrics.functional.classification import dice as dice_score
+from torchmetrics.functional import dice_score
 
 
 IOU_METRIC = "IoU"
