@@ -2,18 +2,18 @@ from argparse import ArgumentParser
 import ruamel.yaml as yaml
 
 from experiments.config import TrainingConfig, SamplingConfig
-from experiments.setup import setup_trainer
+from experiments.setup_trainer import setup_trainer
 
 
 def sample(config):
+    trainer = setup_trainer(config)
     trainer.load(config.load_milestone)
     trainer.test(results_folder=config.experiments_results_folder)
 
 
 def run_ablation(training_config: TrainingConfig, sampling_config: SamplingConfig):
     sampling_configurations = TrainingConfig.generate_sampling_configs(training_config, sampling_config)
-    with Pool(sampling_config.num_workers) as p:
-        p.map(sample, sampling_configurations)
+    [sample(config) for config in sampling_configurations]
 
 
 def main():

@@ -2,10 +2,13 @@ from typing import Tuple, Union, Optional, List
 from pathlib import Path
 from dataclasses import dataclass, fields, _MISSING_TYPE
 from copy import deepcopy
-from multiprocessing import Pool
 
 from itertools import product
 import numpy as np
+
+
+def str_list_to_appropriate_type(str_list: List[str]) -> Union[int, float]:
+    return [float(el) if ("." in el or "e" in el) else int(el) for el in str_list]
 
 
 @dataclass
@@ -16,22 +19,18 @@ class SamplingConfig:
     noising_timesteps: Union[str, List[int]]
     ddim_sampling_eta: Union[str, List[float]]
 
-    num_workers: int = 1
-
     def __post_init__(self):
         for field in fields(self):
             field_value = getattr(self, field.name)
             if type(field_value) == str:
                 try:
-                    start, stop, step = field_value.split(":")
-                    value_as_list = list(np.arange(float(start), float(stop), float(step)))
+                    start, stop, step = str_list_to_appropriate_type(field_value.split(":"))
+                    value_as_list = list(np.arange(start, stop, step))
                     setattr(self, field.name, value_as_list)
                 except AttributeError:
                     assert print(
                         f"{field.name} must be either a list of possible values or follow the format of start:end:step if it is an interval"
-                    ) 
-
-        self.num_workers = self.num_workers or 1
+                    )
 
 
 @dataclass

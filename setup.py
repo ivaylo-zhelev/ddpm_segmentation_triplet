@@ -25,7 +25,7 @@ setup(
     'pillow',
     'ruamel.yaml',
     'torch',
-    'torchmetrics',
+    'torchmetrics==0.8.2',
     'torchvision',
     'tqdm'
   ],

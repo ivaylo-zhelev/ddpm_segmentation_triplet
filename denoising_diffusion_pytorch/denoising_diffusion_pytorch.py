@@ -1336,7 +1336,8 @@ class TrainerSegmentation(TrainerBase):
                     original_image_folder=results_folder / TESTING_FOLDER / IMAGE_FOLDER,
                     ground_truth_segmentation=gt_segm,
                     start_ind=batch_num * self.batch_size,
-                    eval_metrics=eval_metrics or self.eval_metrics
+                    eval_metrics=eval_metrics or self.eval_metrics,
+                    is_first_batch=batch_num == 0
                 )
             )
 
