@@ -1235,6 +1235,7 @@ class TrainerSegmentation(TrainerBase):
         self.only_save_first_batch = only_save_first_batch
         self.has_already_validated = False
         self.eval_metrics = eval_metrics
+        self.only_save_first_batch = only_save_first_batch
 
         dataset = DatasetSegmentation(
             images_folder=images_folder,
