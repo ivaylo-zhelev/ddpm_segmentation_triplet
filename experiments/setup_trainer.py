@@ -1,11 +1,15 @@
 from denoising_diffusion_pytorch import Unet, GaussianDiffusionSegmentationMapping, TrainerSegmentation
 from experiments.config import TrainingConfig
 
+from torch import cuda
+
 def setup_trainer(config: TrainingConfig):
     model = Unet(
         dim=config.dim,
         dim_mults=config.dim_mults
-    ).cuda()
+    )
+    if cuda.is_available():
+        model = model.cuda()
 
     diffusion = GaussianDiffusionSegmentationMapping(
         model,
@@ -19,7 +23,9 @@ def setup_trainer(config: TrainingConfig):
         noising_timesteps=config.noising_timesteps,
         ddim_sampling_eta=config.ddim_sampling_eta,
         is_loss_time_dependent=config.is_loss_time_dependent
-    ).cuda()
+    )
+    if cuda.is_available():
+        diffusion = model.cuda()
 
     trainer = TrainerSegmentation(
         diffusion,
