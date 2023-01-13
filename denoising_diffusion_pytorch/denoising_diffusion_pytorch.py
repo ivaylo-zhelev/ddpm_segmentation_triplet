@@ -1368,11 +1368,10 @@ class TrainerSegmentation(TrainerBase):
 
         eval_results = DataFrame()
         for ind, (image, segmentation, ground_truth) in enumerate(zip(imgs_list, segm_list, gt_list)):
+            segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
+            ground_truth_filename = None
+            original_image_filename = None
             if is_first_batch:
-                segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
-                ground_truth_filename = None
-                original_image_filename = None
-
                 if ground_truths_folder and ground_truth is not None:
                     ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
                     utils.save_image(
