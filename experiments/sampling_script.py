@@ -21,11 +21,11 @@ def main():
     arg_parser.add_argument("-t", "--training-config-file", required=True,
                             type=str,
                             help="path to YAML file specifying this script's training config params",
-                            metavar="CONFIG_FILE")
-    arg_parser.add_argument("-c", "--config-file", required=True,
+                            metavar="TRAINING_CONFIG_FILE")
+    arg_parser.add_argument("-s", "--sampling-config-file", required=True,
                             type=str,
-                            help="path to YAML file specifying this script's config params",
-                            metavar="CONFIG_FILE")
+                            help="path to YAML file specifying this script's sampling config params",
+                            metavar="SAMPLING_CONFIG_FILE")
 
     command_line_args = arg_parser.parse_args()
     with open(command_line_args.training_config_file, "r") as file:
