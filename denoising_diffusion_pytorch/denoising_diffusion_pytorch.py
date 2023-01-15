@@ -877,7 +877,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         print(loss)
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
-        loss = loss * extract(self.p2_loss_weight, t, loss.shape)
+        if not loss.is_loss_time_dependent:
+            loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return loss.mean()
 
     def forward(self, sample_pair, *args, **kwargs):
