@@ -11,7 +11,7 @@ timesteps: 100
 sampling_timesteps: 80
 noising_timesteps: 50
 ddim_sampling_eta: 0.0
-is_loss_time_dependent: True
+is_loss_time_dependent: False
 
 optimizer: rmsprop
 lr_decay: 0
