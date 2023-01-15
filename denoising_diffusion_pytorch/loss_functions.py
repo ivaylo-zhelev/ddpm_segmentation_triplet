@@ -50,7 +50,7 @@ def regularized_triplet_loss(anchor, positive, negative,
     if normalized_to_neg_one_to_one:
         black_image -= 1.0  # If the images are normalized to the [-1; 1] range, black images must all be -1
     regularization = F.triplet_margin_loss(anchor, positive, black_image, margin=regularization_margin, p=p, eps=eps, reduction=reduction)
-    print(loss, regularization)
+    
     if regularize_to_white_image:
         white_image = torch.ones_like(anchor)
         regularization *= F.triplet_margin_loss(anchor, positive, white_image, margin=regularization_margin, p=p, eps=eps, reduction=reduction)
