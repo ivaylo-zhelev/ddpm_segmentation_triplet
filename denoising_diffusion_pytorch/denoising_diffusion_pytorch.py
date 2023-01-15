@@ -849,7 +849,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             negative=negative,
                             margin=self.margin,
                             regularization_margin=self.regularization_margin,
-                            regularize_to_white_image = True,
+                            regularize_to_white_image=True,
                             reduction='none')
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
