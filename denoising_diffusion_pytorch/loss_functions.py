@@ -41,10 +41,14 @@ def regularized_triplet_loss(anchor, positive, negative,
                              p=2.0, eps=1e-6, margin=1.0,
                              regularization_margin=10.0,
                              reduction='none',
-                             regularize_to_white_image = True,
+                             regularize_to_white_image=True,
+                             normalized_to_neg_one_to_one=True,
                              *args, **kwargs):
     loss = F.triplet_margin_loss(anchor, positive, negative, margin=margin, p=p, eps=eps, reduction=reduction)
+
     black_image = torch.zeros_like(anchor)
+    if normalized_to_neg_one_to_one:
+        black_image -= 1.0  # If the images are normalized to the [-1; 1] range, black images must all be -1
     regularization = F.triplet_margin_loss(anchor, positive, black_image, margin=regularization_margin, p=p, eps=eps, reduction=reduction)
     print(loss, regularization)
     if regularize_to_white_image:
