@@ -46,7 +46,7 @@ def regularized_triplet_loss(anchor, positive, negative,
     loss = F.triplet_margin_loss(anchor, positive, negative, margin=margin, p=p, eps=eps, reduction=reduction)
     black_image = torch.zeros_like(anchor)
     regularization = F.triplet_margin_loss(anchor, positive, black_image, margin=regularization_margin, p=p, eps=eps, reduction=reduction)
-    
+    print(loss, regularization)
     if regularize_to_white_image:
         white_image = torch.ones_like(anchor)
         regularization *= F.triplet_margin_loss(anchor, positive, white_image, margin=regularization_margin, p=p, eps=eps, reduction=reduction)
