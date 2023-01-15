@@ -872,12 +872,12 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             negative=negative,
                             margin=self.margin,
                             regularization_margin=self.regularization_margin,
-                            regularize_to_white_image = True,
+                            regularize_to_white_image=True,
                             reduction='none')
         print(loss)
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
-        if not loss.is_loss_time_dependent:
+        if not self.is_loss_time_dependent:
             loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return loss.mean()
 
