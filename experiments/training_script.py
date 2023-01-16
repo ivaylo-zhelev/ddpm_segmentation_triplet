@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 import ruamel.yaml as yaml
 
 from experiments.config import TrainingConfig
-from experiments.setup import setup_trainer
+from experiments.setup_trainer import setup_trainer
 
 
 def train(config: TrainingConfig):
