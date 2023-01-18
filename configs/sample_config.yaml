@@ -26,6 +26,7 @@ step_sizes: [0.000001, 50]
 
 validate_every: 2000
 save_every: 2000
+load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
 train_batch_size: 8
