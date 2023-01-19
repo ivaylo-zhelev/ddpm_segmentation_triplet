@@ -875,7 +875,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             regularize_to_white_image=True,
                             normalized_to_neg_one_to_one=True,
                             reduction='none')
-        print(loss)
+
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
 
         if not self.is_loss_time_dependent:
@@ -1288,7 +1288,6 @@ class TrainerSegmentation(TrainerBase):
                 noisy_image_path = self.results_folder / f"noisy_images_{self.model.milestone}_t={self.model.sampling_timesteps}_nt={self.model.noising_timesteps}"
                 noisy_image_path.mkdir(exist_ok=True, parents=True)
                 self.model.milestone += 1
-                print(self.model.milestone)
                 utils.save_image(gt_segm[0], noisy_image_path / "ground_truth.png")
                 self.infer_batch(
                     batch=imgs,
