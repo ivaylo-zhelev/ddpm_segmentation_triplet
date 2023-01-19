@@ -3,10 +3,10 @@
 #SBATCH --gres=gpu:v100:1
 #SBATCH --time=1-00:00
 #SBATCH --mem=10000
-#SBATCH --job-name=ddpm_segmentation_experiment_3
+#SBATCH --job-name=ddpm_sampling_experiment_3
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=i.zhelev@student.rug.nl
-#SBATCH --output=job-ddpm_segmentation_experiment_3.log
+#SBATCH --output=job-ddpm_sampling_experiment_3.log
 
 
 module purge
