@@ -1258,7 +1258,7 @@ class TrainerSegmentation(TrainerBase):
             self.has_already_validated = True
 
     @torch.no_grad()
-    def test(self, test_ds = None, results_folder = None, eval_metrics = tuple()):
+    def test(self, test_ds = None, results_folder = None, eval_metrics = tuple(), test_steps = None):
         if test_ds or not self.test_dl:
             test_ds = test_ds or self.test_ds
             test_dl = DataLoader(
@@ -1272,7 +1272,7 @@ class TrainerSegmentation(TrainerBase):
             self.test_dl = cycle(test_dl)
 
         test_set_length = len(test_ds)
-        test_steps = ceil(test_set_length / self.batch_size)
+        test_steps = test_steps or ceil(test_set_length / self.batch_size)
 
         results_folder = results_folder or self.results_folder
 
