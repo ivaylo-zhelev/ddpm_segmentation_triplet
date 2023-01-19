@@ -25,7 +25,7 @@ def setup_trainer(config: TrainingConfig):
         is_loss_time_dependent=config.is_loss_time_dependent
     )
     if cuda.is_available():
-        diffusion = model.cuda()
+        diffusion = diffusion.cuda()
 
     trainer = TrainerSegmentation(
         diffusion,

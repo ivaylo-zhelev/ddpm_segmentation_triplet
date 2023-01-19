@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
-#SBATCH --time=3-00:00
+#SBATCH --time=1-00:00
 #SBATCH --mem=10000
 #SBATCH --job-name=ddpm_segmentation_experiment_5
 #SBATCH --mail-type=BEGIN,END,FAIL
