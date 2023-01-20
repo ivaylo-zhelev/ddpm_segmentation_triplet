@@ -51,6 +51,8 @@ class TrainingConfig:
     sampling_timesteps: int = 100
     noising_timesteps: Optional[int] = None
     ddim_sampling_eta: float = 0.0
+    p2_loss_weight_gamma: float = 1.
+    p2_loss_weight_k: int = 1
     is_loss_time_dependent: bool = False
 
     optimizer: str = "adam"
