@@ -823,7 +823,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # noise
         self.objective = "pred_x0"
         self.step = 0
-        self.loss_index = np.zeros((10000, self.timesteps)) - 1.0
+        self.loss_index = np.zeros((10000, self.num_timesteps)) - 1.0
 
     @property
     def loss_fn(self):
