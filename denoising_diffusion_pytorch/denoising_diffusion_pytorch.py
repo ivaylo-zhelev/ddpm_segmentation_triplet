@@ -1318,6 +1318,7 @@ class TrainerSegmentation(TrainerBase):
 
                 with self.accelerator.autocast():
                     loss = self.model(data)
+                    print(loss, validation_steps)
                     loss = loss / validation_steps
                     total_loss += loss.item()
 
