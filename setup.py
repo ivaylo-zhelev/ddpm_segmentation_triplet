@@ -20,6 +20,7 @@ setup(
     'einops',
     'ema-pytorch',
     'importlib_metadata',
+    'matplotlib'
     'packaging',
     'pandas',
     'pillow',
