@@ -824,6 +824,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         self.objective = "pred_x0"
         self.step = 0
         self.loss_index = np.zeros((10000, self.num_timesteps)) - 1.0
+        self.loss_index_post_weighting = np.zeros((10000, self.num_timesteps)) - 1.0
 
     @property
     def loss_fn(self):
@@ -885,7 +886,18 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             self.loss_index[self.step, t_ind] = loss_np
 
         if not self.is_loss_time_dependent:
+            if self.step == 0:
+                print(extract(self.p2_loss_weight, t, loss.shape))
             loss = loss * extract(self.p2_loss_weight, t, loss.shape)
+
+        if self.step == 0:
+            print(self.p2_loss_weight)
+
+        with torch.no_grad():
+            loss_np = loss.mean(dim=1).cpu().detach().numpy()
+            t_ind = np.array(t.cpu().detach().numpy())
+            self.loss_index_post_weighting[self.step, t_ind] = loss_np
+
         return loss.mean()
 
     def forward(self, sample_pair, *args, **kwargs):
@@ -1106,6 +1118,7 @@ class TrainerBase():
         validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
 
         np.savetxt(self.results_folder / "loss_debug.csv", self.model.loss_index, delimiter=",")
+        np.savetxt(self.results_folder / "weighted_loss_debug.csv", self.model.loss_index_post_weighting, delimiter=",")
 
     def load(self, milestone):
         accelerator = self.accelerator
