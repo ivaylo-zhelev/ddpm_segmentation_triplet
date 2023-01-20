@@ -616,10 +616,10 @@ class GaussianDiffusionBase(nn.Module):
         return pred_img, x_start
 
     @torch.no_grad()
-    def sample(self, batch_size = 16, imgs = None):
+    def sample(self, batch_size = 16, imgs = None, testing = False):
         image_size, channels = self.image_size, self.channels
         sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
-        return sample_fn((batch_size, channels, image_size, image_size), img=imgs)
+        return sample_fn((batch_size, channels, image_size, image_size), img=imgs, testing=testing)
 
     @torch.no_grad()
     def p_sample_loop(self, shape, img = None, noise = None):
