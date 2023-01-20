@@ -3,6 +3,9 @@ from experiments.config import TrainingConfig
 
 from torch import cuda
 
+# TODO check optimal margin
+
+
 def setup_trainer(config: TrainingConfig):
     model = Unet(
         dim=config.dim,
