@@ -1378,7 +1378,7 @@ class TrainerSegmentation(TrainerBase):
                     ground_truth_segmentation=gt_segm,
                     start_ind=batch_num * self.batch_size,
                     eval_metrics=eval_metrics or self.eval_metrics,
-                    is_first_batch=batch_num == 0.
+                    is_first_batch=batch_num == 0,
                     testing=True
                 )
             )
