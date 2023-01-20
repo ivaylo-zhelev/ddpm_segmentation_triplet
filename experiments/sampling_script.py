@@ -7,10 +7,7 @@ from experiments.setup_trainer import setup_trainer
 
 
 # TODO check if the sampling is not starting at the wrong end
-# TODO debug the loss and check how it depends on the timestep
 # TODO test on the training dataset to check for overfitting
-# TODO check into p2 loss weighting, maybe it needs to be adapt according to the sampling rather than
-# the training
 # TODO check if the condition for the time-dependent loss weighting should be dropped
 
 
