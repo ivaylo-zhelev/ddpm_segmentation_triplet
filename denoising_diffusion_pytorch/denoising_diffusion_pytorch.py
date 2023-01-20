@@ -660,8 +660,8 @@ class GaussianDiffusionBase(nn.Module):
         if testing:
             results_folder = results_folder / TESTING_FOLDER
 
-        milestone = f"{self.milestone}_"
-        noisy_image_path = results_folder / f"noisy_images_{milestone if testing else ""}{self.milestone}t={self.sampling_timesteps}_nt={self.noising_timesteps}"
+        milestone = f"{self.milestone}_" if not testing else ""
+        noisy_image_path = results_folder / f"noisy_images_{milestone}t={self.sampling_timesteps}_nt={self.noising_timesteps}"
         noisy_image_path.mkdir(exist_ok=True, parents=True)
         utils.save_image(unnormalize_to_zero_to_one(img[0]), noisy_image_path / "original.png")
         x_start = None
