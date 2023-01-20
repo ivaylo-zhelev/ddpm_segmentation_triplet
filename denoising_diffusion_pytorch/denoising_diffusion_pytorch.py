@@ -6,6 +6,7 @@ from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
 from math import ceil
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -457,7 +458,7 @@ class GaussianDiffusionBase(nn.Module):
         sampling_timesteps = None,
         noising_timesteps = None,
         beta_schedule = 'cosine',
-        p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
+        p2_loss_weight_gamma = 1., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
         ddim_sampling_eta = 0.
     ):
@@ -1107,11 +1108,14 @@ class TrainerBase():
 
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
 
+        training_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()]
+        validation_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()]
+
         training_loss_df = DataFrame(
-            data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()],
+            data=training_loss_data,
             index=list(range(len(self.train_loss_dict))))
         validation_loss_df = DataFrame(
-            data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()],
+            data=validation_loss_data,
             index=list(range(len(self.validation_loss_dict))))
 
         training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
@@ -1119,6 +1123,13 @@ class TrainerBase():
 
         np.savetxt(self.results_folder / "loss_debug.csv", self.model.loss_index, delimiter=",")
         np.savetxt(self.results_folder / "weighted_loss_debug.csv", self.model.loss_index_post_weighting, delimiter=",")
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        training_loss_df.plot(x="epoch", y="loss", label="training_loss", ax=ax,
+                              xlabel="Epoch", ylabel="Loss value", title="Loss during training")
+        validation_loss_df.plot(x="epoch", y="loss", label="validation_loss", ax=ax,
+                                xlabel="Epoch", ylabel="Loss value", title="Loss during training")
+        plt.savefig(self.results_folder / "loss_function.png")
 
     def load(self, milestone):
         accelerator = self.accelerator
@@ -1326,7 +1337,7 @@ class TrainerSegmentation(TrainerBase):
             self.has_already_validated = True
 
     @torch.no_grad()
-    def test(self, test_ds = None, results_folder = None, eval_metrics = tuple()):
+    def test(self, test_ds = None, results_folder = None, eval_metrics = tuple(), test_steps = None):
         if test_ds or not self.test_dl:
             test_ds = test_ds or self.test_ds
             test_dl = DataLoader(
@@ -1340,7 +1351,7 @@ class TrainerSegmentation(TrainerBase):
             self.test_dl = cycle(test_dl)
 
         test_set_length = len(test_ds)
-        test_steps = ceil(test_set_length / self.batch_size)
+        test_steps = test_steps or ceil(test_set_length / self.batch_size)
 
         results_folder = results_folder or self.results_folder
 
