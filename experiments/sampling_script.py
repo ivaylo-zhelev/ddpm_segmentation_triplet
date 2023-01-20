@@ -9,6 +9,7 @@ from experiments.setup_trainer import setup_trainer
 # TODO check if the sampling is not starting at the wrong end
 # TODO test on the training dataset to check for overfitting
 # TODO check if the condition for the time-dependent loss weighting should be dropped
+# TODO check if the validation loss works
 
 
 def sample(config, test_steps: Optional[int] = None):

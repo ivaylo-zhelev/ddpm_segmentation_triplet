@@ -642,7 +642,7 @@ class GaussianDiffusionBase(nn.Module):
         return img
 
     @torch.no_grad()
-    def ddim_sample(self, shape, img = None, clip_denoised = True, noise = None):
+    def ddim_sample(self, shape, img = None, clip_denoised = True, noise = None, testing = False):
         batch, device, total_timesteps, sampling_timesteps, eta = shape[0], self.betas.device, self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta
 
         times = torch.linspace(-1, total_timesteps - 1, steps=sampling_timesteps + 1)   # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
@@ -656,7 +656,11 @@ class GaussianDiffusionBase(nn.Module):
             noise = default(noise, lambda: torch.randn_like(img))
             img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
-        noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
+        results_folder = self.results_folder
+        if testing:
+            results_folder = TESTING_FOLDER / results_folder
+
+        noisy_image_path = results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
         noisy_image_path.mkdir(exist_ok=True, parents=True)
         utils.save_image(unnormalize_to_zero_to_one(img[0]), noisy_image_path / "original.png")
         x_start = None
@@ -1362,6 +1366,9 @@ class TrainerSegmentation(TrainerBase):
             data = next(self.test_dl).to(device)
             imgs, gt_segm = torch.unbind(data, dim=1)
 
+            noisy_image_path = results_folder / TESTING_FOLDER / f"noisy_images_t={self.model.sampling_timesteps}_nt={self.model.noising_timesteps}"
+            noisy_image_path.mkdir(exist_ok=True, parents=True)
+            utils.save_image(gt_segm[0], noisy_image_path / "ground_truth.png")
             eval_results = eval_results.append(
                 self.infer_batch(
                     batch=imgs,
@@ -1371,7 +1378,8 @@ class TrainerSegmentation(TrainerBase):
                     ground_truth_segmentation=gt_segm,
                     start_ind=batch_num * self.batch_size,
                     eval_metrics=eval_metrics or self.eval_metrics,
-                    is_first_batch=batch_num == 0
+                    is_first_batch=batch_num == 0.
+                    testing=True
                 )
             )
 
@@ -1389,6 +1397,7 @@ class TrainerSegmentation(TrainerBase):
         threshold = 0.5,
         start_ind = 0,
         eval_metrics = EVAL_FUNCTIONS.keys(),
+        testing = False,
         is_first_batch = False
     ):
         results_folder = results_folder or self.results_folder
@@ -1398,7 +1407,7 @@ class TrainerSegmentation(TrainerBase):
         if original_image_folder:
             original_image_folder.mkdir(exist_ok=True, parents=True)
 
-        pred_segmentations = self.ema.ema_model.sample(batch_size=batch.shape[0], imgs=batch)
+        pred_segmentations = self.ema.ema_model.sample(batch_size=batch.shape[0], imgs=batch, testing=testing)
         imgs_list = list(torch.unbind(batch))
         segm_list = list(torch.unbind(pred_segmentations))
         gt_list = list(torch.unbind(ground_truth_segmentation)) if ground_truth_segmentation is not None \
