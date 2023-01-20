@@ -6,6 +6,7 @@ from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
 from math import ceil
+import matplotlib.pyplot as plt
 
 import torch
 from torch import nn, einsum
