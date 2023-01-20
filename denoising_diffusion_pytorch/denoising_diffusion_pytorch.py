@@ -822,6 +822,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         # noise
         self.objective = "pred_x0"
         self.step = 0
+        self.loss_index = np.zeros((10000, self.timesteps)) - 1.0
 
     @property
     def loss_fn(self):
@@ -877,8 +878,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             reduction='none')
 
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
-        print("Loss:", loss.mean())
-        print("Timestep:", t)
+        self.loss_index[self.step, t] = loss
+        print(self.loss_index)
 
         if not self.is_loss_time_dependent:
             loss = loss * extract(self.p2_loss_weight, t, loss.shape)
@@ -1100,6 +1101,8 @@ class TrainerBase():
 
         training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
         validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
+
+        np.savetxt(self.results_folder / "loss_debug.csv", delimiter=",")
 
     def load(self, milestone):
         accelerator = self.accelerator
