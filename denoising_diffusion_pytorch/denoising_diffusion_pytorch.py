@@ -877,6 +877,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             reduction='none')
 
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
+        print("Loss:", loss.mean())
+        print("Timestep:", t)
 
         if not self.is_loss_time_dependent:
             loss = loss * extract(self.p2_loss_weight, t, loss.shape)
