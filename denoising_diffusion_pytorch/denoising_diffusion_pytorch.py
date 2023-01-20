@@ -1105,7 +1105,7 @@ class TrainerBase():
         training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
         validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
 
-        np.savetxt(self.results_folder / "loss_debug.csv", self.model.loss_index delimiter=",")
+        np.savetxt(self.results_folder / "loss_debug.csv", self.model.loss_index, delimiter=",")
 
     def load(self, milestone):
         accelerator = self.accelerator
