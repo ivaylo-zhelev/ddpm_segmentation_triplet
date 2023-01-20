@@ -1074,8 +1074,8 @@ class TrainerBase():
 
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot("epoch", "loss", self.train_loss_dict, color='tab:blue')
-        ax.plot("epoch", "loss", self.validation_loss_dict, color='tab:orange')
+        ax.plot("epoch", "loss", self.train_loss_dict, color='blue')
+        ax.plot("epoch", "loss", self.validation_loss_dict, color='orange')
         plt.savefig(self.results_folder / "loss_function.png")
 
     def load(self, milestone):
