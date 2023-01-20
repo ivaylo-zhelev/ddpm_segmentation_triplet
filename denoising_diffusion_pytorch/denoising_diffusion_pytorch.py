@@ -1078,9 +1078,9 @@ class TrainerBase():
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
         training_loss_df.plot(x="epoch", y="loss", label="training_loss", ax=ax,
-                              xlabel="Epoch", ylabel="Loss value")
+                              xlabel="Epoch", ylabel="Loss value", title="Loss during training")
         validation_loss_df.plot(x="epoch", y="loss", label="validation_loss", ax=ax,
-                                xlabel="Epoch", ylabel="Loss value")
+                                xlabel="Epoch", ylabel="Loss value", title="Loss during training")
         plt.savefig(self.results_folder / "loss_function.png")
 
     def load(self, milestone):
