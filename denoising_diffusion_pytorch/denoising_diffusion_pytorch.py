@@ -1062,11 +1062,14 @@ class TrainerBase():
 
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
 
+        training_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()]
+        validation_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()]
+
         training_loss_df = DataFrame(
-            data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()],
+            data=training_loss_data,
             index=list(range(len(self.train_loss_dict))))
         validation_loss_df = DataFrame(
-            data=[{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()],
+            data=validation_loss_data,
             index=list(range(len(self.validation_loss_dict))))
 
         training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
@@ -1074,8 +1077,8 @@ class TrainerBase():
 
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot("epoch", "loss", self.train_loss_dict, color='blue')
-        ax.plot("epoch", "loss", self.validation_loss_dict, color='orange')
+        ax.plot("epoch", "loss", data=training_loss_data, color='blue')
+        ax.plot("epoch", "loss", data=validation_loss_data, color='orange')
         plt.savefig(self.results_folder / "loss_function.png")
 
     def load(self, milestone):
