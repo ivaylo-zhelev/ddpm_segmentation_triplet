@@ -881,7 +881,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
         t_ind = np.array(t.cpu().detach().numpy())
         print(t_ind)
-        self.loss_index[self.step, t_ind] = loss
+        self.loss_index[self.step, t_ind] = loss.cpu().detach().numpy()
         print(self.loss_index)
 
         if not self.is_loss_time_dependent:
