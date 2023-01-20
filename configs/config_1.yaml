@@ -6,7 +6,7 @@ dim: 64
 dim_mults: [1, 2, 4, 8]
 
 image_size: 320
-margin: 8.0
+margin: 32.0
 loss_type: triplet
 timesteps: 100          
 sampling_timesteps: 80
