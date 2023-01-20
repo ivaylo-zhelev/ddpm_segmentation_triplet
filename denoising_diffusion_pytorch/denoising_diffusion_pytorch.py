@@ -879,7 +879,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             reduction='none')
 
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
-        self.loss_index[self.step, t] = loss
+        self.loss_index[self.step, t.cpu()] = loss
         print(self.loss_index)
 
         if not self.is_loss_time_dependent:
