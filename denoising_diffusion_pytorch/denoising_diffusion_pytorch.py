@@ -893,10 +893,9 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             t_ind = np.array(t.cpu().detach().numpy())
             self.loss_index[self.step, t_ind] = loss_np
 
-        if not self.is_loss_time_dependent:
-            if self.step == 0:
-                print(extract(self.p2_loss_weight, t, loss.shape))
-            loss = loss * extract(self.p2_loss_weight, t, loss.shape)
+        if self.step == 0:
+            print(extract(self.p2_loss_weight, t, loss.shape))
+        loss = loss * extract(self.p2_loss_weight, t, loss.shape)
 
         if self.step == 0 or validating:
             print(self.p2_loss_weight)
