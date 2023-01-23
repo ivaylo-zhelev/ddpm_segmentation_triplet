@@ -847,7 +847,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         else:
             raise ValueError(f"Loss function of type {self.loss_type} is not supported")
 
-    def p_losses(self, x_start, b_start, t, noise=None):
+    def p_losses(self, x_start, b_start, t, noise=None, validating=False):
         if x_start.shape != b_start.shape:
             raise ValueError("The dimensionality of the image and the segmentation maps must be the same")
 
@@ -886,6 +886,8 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             reduction='none')
 
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
+        if validating:
+            print("Before weighting:", loss)
         with torch.no_grad():
             loss_np = loss.mean(dim=1).cpu().detach().numpy()
             t_ind = np.array(t.cpu().detach().numpy())
@@ -896,7 +898,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                 print(extract(self.p2_loss_weight, t, loss.shape))
             loss = loss * extract(self.p2_loss_weight, t, loss.shape)
 
-        if self.step == 0:
+        if self.step == 0 or validating:
             print(self.p2_loss_weight)
 
         with torch.no_grad():
@@ -904,9 +906,11 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             t_ind = np.array(t.cpu().detach().numpy())
             self.loss_index_post_weighting[self.step, t_ind] = loss_np
 
+        if validating:
+            print("After weighting:", loss)
         return loss.mean()
 
-    def forward(self, sample_pair, *args, **kwargs):
+    def forward(self, sample_pair, validating=False, *args, **kwargs):
         self.training_image_path = self.results_folder / "training"
         self.training_image_path.mkdir(exist_ok=True, parents=True)
         img, segmentation = torch.unbind(sample_pair, dim=1)
@@ -918,7 +922,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         img = normalize_to_neg_one_to_one(img)
         segmentation = normalize_to_neg_one_to_one(segmentation)
-        return self.p_losses(img, segmentation, t, *args, **kwargs)
+        return self.p_losses(img, segmentation, t, validating, *args, **kwargs)
 
 
 class Dataset(torch_data.Dataset):
@@ -1317,7 +1321,7 @@ class TrainerSegmentation(TrainerBase):
                 data = next(self.valid_dl).to(device)
 
                 with self.accelerator.autocast():
-                    loss = self.model(data)
+                    loss = self.model(data, validating=True)
                     print(loss, validation_steps)
                     loss = loss / validation_steps
                     total_loss += loss.item()
