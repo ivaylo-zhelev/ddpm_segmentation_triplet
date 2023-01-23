@@ -776,7 +776,6 @@ class GaussianDiffusion(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
-        segmentation = normalize_to_neg_one_to_one(segmentation)
         return self.p_losses(img, t, *args, **kwargs)
 
 
@@ -867,6 +866,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
 
         img = normalize_to_neg_one_to_one(img)
+        segmentation = normalize_to_neg_one_to_one(segmentation)
         return self.p_losses(img, segmentation, t, *args, **kwargs)
 
 
