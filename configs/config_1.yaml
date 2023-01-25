@@ -16,7 +16,7 @@ p2_loss_weight_gamma: 1.
 p2_loss_weight_k: 1
 is_loss_time_dependent: False
 
-optimizer: rmsprop
+optimizer: adam
 lr_decay: 0
 weight_decay: 0.001
 rms_prop_alpha: 0.99
