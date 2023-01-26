@@ -53,7 +53,7 @@ def setup_trainer(config: TrainingConfig):
         train_num_steps=config.train_num_steps,    
         gradient_accumulate_every=config.gradient_accumulate_every,
         ema_decay=config.ema_decay,
-        amp=True
+        amp=False
     )
 
     return trainer
