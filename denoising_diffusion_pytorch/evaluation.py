@@ -1,9 +1,13 @@
 from torchmetrics.functional.image import structural_similarity_index_measure
+import torch.nn.functional as F
+
 
 F1_METRIC = "F1"
 IOU_METRIC = "IoU"
 DICE_METRIC = "Dice"
 SSIM_METRIC = "SSIM"
+MAE_METRIC = "MAE"
+
 
 def iou(predicted, ground_truth, threshold=0.5):
     predicted = predicted.mean(1)
@@ -52,12 +56,18 @@ def f1_score(predicted, ground_truth, threshold=0.5, eps=1e-06):
     return f1.item()
 
 
+def mae(predicted, ground_truth):
+    return F.l1_loss(predicted, ground_truth).item()
+
+
 def ssim(predicted, ground_truth, *args, **kwargs):
     return structural_similarity_index_measure(predicted, ground_truth).item()
+
 
 EVAL_FUNCTIONS = {
     F1_METRIC: f1_score,
     IOU_METRIC: iou,
     DICE_METRIC: dice,
     SSIM_METRIC: ssim
+    MAE_METRIC: mae
 }
