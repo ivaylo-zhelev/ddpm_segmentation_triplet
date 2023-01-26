@@ -1214,7 +1214,11 @@ class TrainerBase():
                         loss = self.model(data)
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
-
+                        
+                        if torch.any(torch.isnan(total_loss)):
+                            print(img)
+                            assert False, "The total loss is NaN"
+                        
                     self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
