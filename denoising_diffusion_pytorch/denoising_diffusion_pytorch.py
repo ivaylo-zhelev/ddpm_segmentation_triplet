@@ -863,7 +863,10 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         # predict and take gradient step
         model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
-
+        if torch.any(torch.isnan(model_out)):
+            print(model_out)
+            assert False, "The model output is NaN"
+        
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
         """if self.step % 20 == 0:
@@ -871,6 +874,12 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             utils.save_image(positive[0], self.training_image_path / f"positive_{self.step}_t={t[0]}.png")
             utils.save_image(negative[0], self.training_image_path / f"negative_{self.step}_t={t[0]}.png")"""
         
+        if torch.any(torch.isnan(positive)):
+            print(positive)
+            assert False, "The positive sample is NaN"
+        if torch.any(torch.isnan(negative)):
+            print(negative)
+            assert False, "The negative sample is NaN"
         loss = self.loss_fn(anchor=model_out,
                             positive=positive,
                             negative=negative,
@@ -879,8 +888,15 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                             regularize_to_white_image=True,
                             normalized_to_neg_one_to_one=True,
                             reduction='none')
-
+        
+        if torch.any(torch.isnan(loss)):
+            print(loss)
+            assert False, "The loss before reduction is NaN"
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
+        
+        if torch.any(torch.isnan(loss)):
+            print(loss)
+            assert False, "The loss after reduction (before weighting) is NaN"
         if validating:
             print("Before weighting:", loss)
         with torch.no_grad():
@@ -892,6 +908,9 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             print(extract(self.p2_loss_weight, t, loss.shape))
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
 
+        if torch.any(torch.isnan(loss)):
+            print(loss)
+            assert False, "The loss after weighting is NaN"
         if self.step == 0 or validating:
             print(self.p2_loss_weight)
 
