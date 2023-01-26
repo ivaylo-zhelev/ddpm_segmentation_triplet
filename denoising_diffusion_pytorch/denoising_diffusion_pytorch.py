@@ -560,7 +560,7 @@ class GaussianDiffusionBase(nn.Module):
         model_output = self.model(x, t, x_self_cond)
         """if torch.any(torch.isnan(model_output)):
             print(model_output)
-            assert False, "The pred_start is NaN""""
+            assert False, The pred_start is NaN"""
         maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
 
         if self.objective == 'pred_noise':
