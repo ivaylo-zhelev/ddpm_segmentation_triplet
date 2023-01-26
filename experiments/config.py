@@ -69,6 +69,7 @@ class TrainingConfig:
     load_milestone: int = 1
     data_split: Tuple[float, float, float] = (0.8, 0.1, 0.1)
     num_samples: int = 25
+    num_training_examples: Optional[int] = None
     train_batch_size: int = 8
     train_lr: float = 8e-5
     train_num_steps: int = 100000    

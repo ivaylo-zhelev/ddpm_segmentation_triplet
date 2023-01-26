@@ -40,6 +40,7 @@ def setup_trainer(config: TrainingConfig):
         save_every=config.save_every,
         data_split=config.data_split,
         num_samples=config.num_samples,
+        num_training_examples=config.num_training_examples,
         train_batch_size=config.train_batch_size,
         optimizer=config.optimizer,
         adam_betas=config.adam_betas,
