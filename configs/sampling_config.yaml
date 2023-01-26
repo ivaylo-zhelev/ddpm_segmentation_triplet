@@ -1,4 +1,4 @@
-load_milestone: [2]
+load_milestone: [5]
 
 sampling_timesteps: "10:60:10"
 noising_timesteps: "10:40:5"

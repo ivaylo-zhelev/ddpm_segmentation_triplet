@@ -7,7 +7,7 @@ dim_mults: [1, 2, 4, 8]
 
 image_size: 320
 margin: 24.0
-regularization_margin: 30.0
+regularization_margin: 20.0
 regularize_to_white_image: True
 loss_type: regularized_triplet
 timesteps: 100          
