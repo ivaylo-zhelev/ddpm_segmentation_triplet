@@ -29,6 +29,13 @@ save_every: 2000
 load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
+# Set num_training_examples to null if you want to use the full dataset. If not, you can specify
+# how many training examples are to be used
+num_training_examples: null 
+# Set epochs to null if you are not interested in the number of epochs. If so, the model will train for as 
+# many iterations as you specified in train_num_steps. Else, it will calculate the number of iterations based on
+# the number of epochs 
+epochs: null 
 train_batch_size: 8
 train_lr: 0.00008
 train_num_steps: 100000    

@@ -40,6 +40,7 @@ def setup_trainer(config: TrainingConfig):
         save_every=config.save_every,
         data_split=config.data_split,
         num_samples=config.num_samples,
+        num_training_examples=config.num_training_examples,
         train_batch_size=config.train_batch_size,
         optimizer=config.optimizer,
         adam_betas=config.adam_betas,
@@ -50,7 +51,8 @@ def setup_trainer(config: TrainingConfig):
         etas=config.etas,
         step_sizes=config.step_sizes,
         train_lr=config.train_lr,
-        train_num_steps=config.train_num_steps,    
+        train_num_steps=config.train_num_steps,
+        epochs=config.epochs,    
         gradient_accumulate_every=config.gradient_accumulate_every,
         ema_decay=config.ema_decay,
         amp=False

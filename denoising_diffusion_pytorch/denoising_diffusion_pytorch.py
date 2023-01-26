@@ -6,6 +6,7 @@ from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
 from math import ceil
+from random import shuffle
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -1005,6 +1006,7 @@ class DatasetSegmentation(Dataset):
         images_folder,
         segmentations_folder,
         image_mode = "RGB",
+        num_examples = None,
         *args,
         **kwargs
     ):
@@ -1017,6 +1019,11 @@ class DatasetSegmentation(Dataset):
             (path_img, Path(segmentations_folder) / Path(path_img).name)
             for path_img in self.paths if path_img.name in segmentation_images
         ]
+        if num_examples:
+            shuffle(self.paths)
+            self.paths = self.paths[:num_examples]
+        
+        self.num_examples = num_examples or len(self.paths)
 
     def __getitem__(self, index):
         img_path, segm_path = self.paths[index]
@@ -1310,6 +1317,8 @@ class TrainerSegmentation(TrainerBase):
         segmentations_folder,
         validate_every = 1000,
         save_every = 1000,
+        num_training_examples = None,
+        epochs = None,
         only_save_first_batch = True,
         data_split = (0.8, 0.1, 0.1),
         eval_metrics = EVAL_FUNCTIONS.keys(),
@@ -1325,10 +1334,12 @@ class TrainerSegmentation(TrainerBase):
         self.eval_metrics = eval_metrics
         self.only_save_first_batch = only_save_first_batch
 
+        num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
         dataset = DatasetSegmentation(
             images_folder=images_folder,
             segmentations_folder=segmentations_folder,
             image_size=self.image_size,
+            num_examples=num_examples,
             augment_horizontal_flip=self.augment_horizontal_flip,
             convert_image_to=self.convert_image_to
         )
@@ -1349,6 +1360,9 @@ class TrainerSegmentation(TrainerBase):
         valid_dl = self.accelerator.prepare(valid_dl)
         self.valid_dl = cycle(valid_dl)
         self.test_dl = None
+
+        if epochs:
+            self.train_num_steps = (len(self.ds) * epochs) // self.batch_size
 
     @torch.no_grad()
     def validate_or_sample(self):
