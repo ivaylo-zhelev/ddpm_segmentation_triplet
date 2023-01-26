@@ -68,6 +68,6 @@ EVAL_FUNCTIONS = {
     F1_METRIC: f1_score,
     IOU_METRIC: iou,
     DICE_METRIC: dice,
-    SSIM_METRIC: ssim
+    SSIM_METRIC: ssim,
     MAE_METRIC: mae
 }
