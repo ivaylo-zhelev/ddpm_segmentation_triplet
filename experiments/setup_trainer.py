@@ -23,8 +23,8 @@ def setup_trainer(config: TrainingConfig):
         sampling_timesteps=config.sampling_timesteps,
         noising_timesteps=config.noising_timesteps,
         ddim_sampling_eta=config.ddim_sampling_eta,
-        p2_loss_weight_gamma = config.p2_loss_weight_gamma,
-        p2_loss_weight_k = config.p2_loss_weight_k,
+        p2_loss_weight_gamma=config.p2_loss_weight_gamma,
+        p2_loss_weight_k=config.p2_loss_weight_k,
         is_loss_time_dependent=config.is_loss_time_dependent
     )
     if cuda.is_available():
