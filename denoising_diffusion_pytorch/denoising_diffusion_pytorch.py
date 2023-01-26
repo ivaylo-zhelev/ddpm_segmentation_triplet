@@ -6,6 +6,7 @@ from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
 from math import ceil
+from random import shuffle
 import matplotlib.pyplot as plt
 
 import torch
@@ -924,6 +925,7 @@ class DatasetSegmentation(Dataset):
             for path_img in self.paths if path_img.name in segmentation_images
         ]
         if num_examples:
+            shuffle(self.paths)
             self.paths = self.paths[:num_examples]
         
         self.num_examples = num_examples or len(self.paths)
