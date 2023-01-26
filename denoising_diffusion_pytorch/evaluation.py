@@ -1,5 +1,6 @@
 from torchmetrics.functional.image import structural_similarity_index_measure
 import torch.nn.functional as F
+import torch
 
 
 F1_METRIC = "F1"
