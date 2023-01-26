@@ -72,7 +72,8 @@ class TrainingConfig:
     num_training_examples: Optional[int] = None
     train_batch_size: int = 8
     train_lr: float = 8e-5
-    train_num_steps: int = 100000    
+    train_num_steps: int = 100000
+    epochs: Optional[int] = None    
     gradient_accumulate_every: int = 2
     ema_decay: float = 0.995
 

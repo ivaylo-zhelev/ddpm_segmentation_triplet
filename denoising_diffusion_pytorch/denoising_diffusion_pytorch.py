@@ -1203,6 +1203,7 @@ class TrainerSegmentation(TrainerBase):
         validate_every = 1000,
         save_every = 1000,
         num_training_examples = None,
+        epochs = None,
         only_save_first_batch = True,
         data_split = (0.8, 0.1, 0.1),
         eval_metrics = EVAL_FUNCTIONS.keys(),
@@ -1243,6 +1244,9 @@ class TrainerSegmentation(TrainerBase):
         valid_dl = self.accelerator.prepare(valid_dl)
         self.valid_dl = cycle(valid_dl)
         self.test_dl = None
+
+        if epochs:
+            self.train_num_steps = (len(self.ds) * epochs) // self.batch_size
 
     @torch.no_grad()
     def validate_or_sample(self):

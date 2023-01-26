@@ -28,6 +28,7 @@ load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
 num_training_examples: null
+epochs: null 
 train_batch_size: 8
 train_lr: 0.000008
 train_num_steps: 1000000 
