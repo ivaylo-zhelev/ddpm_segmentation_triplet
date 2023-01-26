@@ -1249,6 +1249,8 @@ class TrainerSegmentation(TrainerBase):
 
         if epochs:
             self.train_num_steps = (len(self.ds) * epochs) // self.batch_size
+            self.validate_every = round((validate_every / epochs) * self.train_num_steps)
+            self.save_every = round((save_every / epochs) * self.train_num_steps)
 
     @torch.no_grad()
     def validate_or_sample(self):
