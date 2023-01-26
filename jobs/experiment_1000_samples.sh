@@ -3,10 +3,10 @@
 #SBATCH --gres=gpu:v100:1
 #SBATCH --time=1-00:00
 #SBATCH --mem=10000
-#SBATCH --job-name=ddpm_segmentation_experiment_4
+#SBATCH --job-name=ddpm_segmentation_experiment_1000_samples
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=i.zhelev@student.rug.nl
-#SBATCH --output=job-ddpm_segmentation_experiment_4.log
+#SBATCH --output=job-ddpm_segmentation_experiment_1000_samples.log
 
 
 module purge
@@ -16,4 +16,4 @@ module load Boost
 
 source /data/s3782255/.envs/diffusion_segm/bin/activate
 
-python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/training_script.py --config-file=/home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_4.yaml
+python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/training_script.py --config-file=/home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_1000_samples.yaml
