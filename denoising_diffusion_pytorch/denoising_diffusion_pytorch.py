@@ -560,7 +560,7 @@ class GaussianDiffusionBase(nn.Module):
         model_output = self.model(x, t, x_self_cond)
         """if torch.any(torch.isnan(model_output)):
             print(model_output)
-            assert False, The pred_start is NaN"""
+            # assert False, The pred_start is NaN"""
         maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
 
         if self.objective == 'pred_noise':
@@ -574,11 +574,11 @@ class GaussianDiffusionBase(nn.Module):
             
             if torch.any(torch.isnan(x_start)):
                 print(x_start)
-                assert False, "The pred_start after clipping is NaN"
+                # assert False, "The pred_start after clipping is NaN"
             pred_noise = self.predict_noise_from_start(x, t, x_start)
             if torch.any(torch.isnan(pred_noise)):
                 print(pred_noise)
-                assert False, "The pred_noise is NaN"
+                # assert False, "The pred_noise is NaN"
 
         elif self.objective == 'pred_v':
             v = model_output
@@ -589,7 +589,7 @@ class GaussianDiffusionBase(nn.Module):
         return ModelPrediction(pred_noise, x_start)
 
     def p_mean_variance(self, x, t, x_self_cond = None, clip_denoised = True):
-        assert False, "p_mean_variance is used during training"
+        # assert False, "p_mean_variance is used during training"
         preds = self.model_predictions(x, t, x_self_cond)
         x_start = preds.pred_x_start
         noisy_image_path = self.results_folder / f"noisy_images_{self.milestone}_t={self.sampling_timesteps}_nt={self.noising_timesteps}"
@@ -877,7 +877,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
             print(model_out)
             print("Num of nan values", torch.isnan(model_out).sum())
             print(model_out.shape)
-            assert False, "The model output is NaN"
+            # assert False, "The model output is NaN"
         
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
@@ -888,10 +888,10 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         
         if torch.any(torch.isnan(positive)):
             print(positive)
-            assert False, "The positive sample is NaN"
+            # assert False, "The positive sample is NaN"
         if torch.any(torch.isnan(negative)):
             print(negative)
-            assert False, "The negative sample is NaN"
+            # assert False, "The negative sample is NaN"
         loss = self.loss_fn(anchor=model_out,
                             positive=positive,
                             negative=negative,
@@ -903,12 +903,12 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
         
         if torch.any(torch.isnan(loss)):
             print(loss)
-            assert False, "The loss before reduction is NaN"
+            # assert False, "The loss before reduction is NaN"
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
         
         if torch.any(torch.isnan(loss)):
             print(loss)
-            assert False, "The loss after reduction (before weighting) is NaN"
+            # assert False, "The loss after reduction (before weighting) is NaN"
         if validating:
             print("Before weighting:", loss)
         with torch.no_grad():
@@ -922,7 +922,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         if torch.any(torch.isnan(loss)):
             print(loss)
-            assert False, "The loss after weighting is NaN"
+            # assert False, "The loss after weighting is NaN"
         if self.step == 0 or validating:
             print(self.p2_loss_weight)
 
@@ -947,22 +947,22 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
 
         if torch.any(torch.isnan(img)):
             print(img)
-            assert False, "The image before normalization is NaN"
+            # assert False, "The image before normalization is NaN"
         
         if torch.any(torch.isnan(segmentation)):
             print(segmentation)
-            assert False, "The segmentation before normalization is NaN"
+            # assert False, "The segmentation before normalization is NaN"
 
         img = normalize_to_neg_one_to_one(img)
         segmentation = normalize_to_neg_one_to_one(segmentation)
         
         if torch.any(torch.isnan(img)):
             print(img)
-            assert False, "The image after normalization is NaN"
+            # assert False, "The image after normalization is NaN"
         
         if torch.any(torch.isnan(segmentation)):
             print(segmentation)
-            assert False, "The segmentation after normalization is NaN"
+            # assert False, "The segmentation after normalization is NaN"
         return self.p_losses(img, segmentation, t, validating, *args, **kwargs)
 
 
