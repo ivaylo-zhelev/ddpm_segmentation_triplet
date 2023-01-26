@@ -1117,7 +1117,10 @@ class TrainerBase():
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
 
-                    self.accelerator.backward(loss)
+                    if torch.any(torch.isnan(loss)):
+                        accelerator.print(f"[WARNING]: NaN loss at step {self.step}")
+                    else:
+                        self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
                 pbar.set_description(f'Training loss: {total_loss:.4f}')
