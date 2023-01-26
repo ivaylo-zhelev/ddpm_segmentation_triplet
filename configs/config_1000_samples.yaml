@@ -23,13 +23,13 @@ rms_prop_alpha: 0.99
 momentum: 0.9
 step_sizes: [0.000001, 50]
 
-validate_every: 50
-save_every: 100
+validate_every: 20
+save_every: 80
 load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
 num_training_examples: 1000
-epochs: 400
+epochs: 160
 train_batch_size: 8
 train_lr: 0.000008
 gradient_accumulate_every: 1
