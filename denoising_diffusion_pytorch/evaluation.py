@@ -57,7 +57,7 @@ def f1_score(predicted, ground_truth, threshold=0.5, eps=1e-06):
     return f1.item()
 
 
-def mae(predicted, ground_truth):
+def mae(predicted, ground_truth, *args, **kwargs):
     return F.l1_loss(predicted, ground_truth).item()
 
 
