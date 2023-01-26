@@ -35,6 +35,9 @@ num_training_examples: null
 # Set epochs to null if you are not interested in the number of epochs. If so, the model will train for as 
 # many iterations as you specified in train_num_steps. Else, it will calculate the number of iterations based on
 # the number of epochs 
+
+# IMPORTANT! If epochs is not null, save_every and validate_every are with respect to the epochs, not the training
+# iterations.
 epochs: null 
 train_batch_size: 8
 train_lr: 0.00008
