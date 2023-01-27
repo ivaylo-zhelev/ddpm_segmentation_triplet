@@ -6,8 +6,6 @@ from experiments.config import TrainingConfig, SamplingConfig
 from experiments.setup_trainer import setup_trainer
 
 
-# TODO check if the sampling is not starting at the wrong end
-# TODO Make it so that save_every and validate_every are done based on epoch, and not training iteration
 # TODO check if the condition for the time-dependent loss weighting should be dropped
 
 
