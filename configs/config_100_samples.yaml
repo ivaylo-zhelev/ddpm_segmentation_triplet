@@ -29,7 +29,7 @@ load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
 num_training_examples: 100
-epochs: 160
+epochs: 80
 train_batch_size: 8
 train_lr: 0.000008
 gradient_accumulate_every: 1
