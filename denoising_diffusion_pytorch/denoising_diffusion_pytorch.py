@@ -841,7 +841,7 @@ class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
                 x_self_cond.detach_()
 
         # predict and take gradient step
-        model_out = self.model_predictions(x, t, x_self_cond).pred_x_start
+        model_out = self.model_predictions(x, t, x_self_cond, clip_x_start=True).pred_x_start
 
         positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
             else (b_start, x_start)
