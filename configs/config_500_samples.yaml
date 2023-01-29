@@ -24,7 +24,7 @@ momentum: 0.9
 step_sizes: [0.000001, 50]
 
 validate_every: 20
-save_every: 80
+save_every: 20
 load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
