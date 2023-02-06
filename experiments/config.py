@@ -7,8 +7,46 @@ from itertools import product
 import numpy as np
 
 
+PathLike = Union[str, Path]
+
+DEFAULT_K_FOLD = 5
+
+
 def str_list_to_appropriate_type(str_list: List[str]) -> Union[int, float]:
     return [float(el) if ("." in el or "e" in el) else int(el) for el in str_list]
+
+
+@dataclass
+class KFoldConfig:
+    training_images_folders: List[PathLike]
+    training_segmentation_folders: List[PathLike]
+    testing_images_folder: Union[PathLike, List[PathLike]]
+    testing_segmentation_folder: Union[PathLike, List[PathLike]]
+
+    k: int = DEFAULT_K_FOLD
+
+    def __post_init__(self):
+        if isinstance(self.training_images_folders, str):
+            self.training_images_folders = Path(self.training_images_folders)
+        else:
+            self.training_images_folders = [Path(path) for path in self.training_images_folders]
+
+        if isinstance(self.training_segmentation_folders, str):
+            self.training_segmentation_folders = Path(self.training_segmentation_folders)
+        else:
+            self.training_segmentation_folders = [Path(path) for path in self.training_segmentation_folders]
+
+        if isinstance(self.testing_images_folder, str):
+            self.testing_images_folder = Path(self.testing_images_folder)
+        else:
+            self.testing_images_folder = [Path(path) for path in self.testing_images_folder]
+
+        if isinstance(self.testing_segmentation_folder, str):
+            self.testing_segmentation_folder = Path(self.testing_segmentation_folder)
+        else:
+            self.testing_segmentation_folder = [Path(path) for path in self.testing_segmentation_folder]
+
+        self.k = self.k or DEFAULT_K_FOLD
 
 
 @dataclass
@@ -35,9 +73,13 @@ class SamplingConfig:
 
 @dataclass
 class TrainingConfig:
-    images_folder: Union[str, Path]
-    segmentation_folder: Union[str, Path]
-    results_folder: Union[str, Path]
+    images_folder: Union[PathLike, List[PathLike]]
+    segmentation_folder: Union[PathLike, List[PathLike]]
+    results_folder: Union[PathLike, List[PathLike]]
+    validation_images_folder: Union[PathLike, List[PathLike]] = None
+    validation_segmentations_folder: Union[PathLike, List[PathLike]] = None
+    testing_images_folder: Union[PathLike, List[PathLike]] = None
+    testing_segmentations_folder: Union[PathLike, List[PathLike]] = None
 
     dim: int = 64
     dim_mults: Tuple[int, int, int, int] = (1, 2, 4, 8)
@@ -77,7 +119,7 @@ class TrainingConfig:
     gradient_accumulate_every: int = 2
     ema_decay: float = 0.995
 
-    experiments_results_folder: Optional[Union[str, Path]] = None
+    experiments_results_folder: Optional[Union[PathLike, List[PathLike]]] = None
 
     def __post_init__(self):
         # Loop through the fields
@@ -86,8 +128,16 @@ class TrainingConfig:
             if not isinstance(field.default, _MISSING_TYPE) and getattr(self, field.name) is None:
                 setattr(self, field.name, field.default)
 
-        self.images_folder = Path(self.images_folder)
-        self.segmentation_folder = Path(self.segmentation_folder)
+        if isinstance(self.images_folder, str):
+            self.images_folder = Path(self.images_folder)
+        else:
+            self.images_folder = [Path(path) for path in self.images_folder]
+
+        if isinstance(self.segmentation_folder, str):
+            self.segmentation_folder = Path(self.segmentation_folder)
+        else:
+            self.segmentation_folder = [Path(path) for path in self.segmentation_folder]
+
         self.results_folder = Path(self.results_folder)
 
     def generate_sampling_configs(self, sampling_config):
@@ -109,6 +159,26 @@ class TrainingConfig:
 
             name_experiment = f"testing_m={load_milestone}_st={sampling_timesteps}_nt={noising_timesteps}_eta={ddim_sampling_eta}"
             new_config.experiments_results_folder = self.results_folder / name_experiment
+
+            training_configs.append(new_config)
+
+        return training_configs
+
+    def generate_k_fold_configs(self, k_fold_config):
+        assert len(k_fold_config.training_images_folders) == len(k_fold_config.training_segmentation_folders), \
+            "The image and segmentations folders must be of the same length"
+        assert not len(k_fold_config.training_images_folders) % k_fold_config.k, \
+            f"The number of folders must be divisible by k, in this case {k_fold_config.k}"
+
+        training_configs = []
+        for fold_num in range(k_fold_config.k):
+            new_config = deepcopy(self)
+
+            new_config.results_folder = self.results_folder / f"fold_{fold_num}"
+            new_config.images_folder = k_fold_config.training_images_folders[:fold_num] + k_fold_config.training_images_folders[fold_num + 1:]
+            new_config.segmentation_folder = k_fold_config.training_segmentation_folders[:fold_num] + k_fold_config.training_segmentation_folders[fold_num + 1:]
+            new_config.validation_images_folder = k_fold_config.training_images_folders[fold_num]
+            new_config.validation_segmentations_folder = k_fold_config.training_segmentation_folders[fold_num]
 
             training_configs.append(new_config)
 

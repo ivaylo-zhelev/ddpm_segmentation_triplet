@@ -1262,6 +1262,7 @@ class TrainerSegmentation(TrainerBase):
                 augment_horizontal_flip=self.augment_horizontal_flip,
                 convert_image_to=self.convert_image_to
             )
+            self.test_ds = None
             if testing_images_folder and testing_segmentations_folder:        
                 self.test_ds = DatasetSegmentation(
                     images_folder=testing_images_folder,
