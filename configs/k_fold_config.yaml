@@ -1,22 +1,22 @@
 training_images_folders: [
   /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/5ZBQ5VZO6IA5VHDX3X0U/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/L9YXESHQ6UDYDYTG3UP2/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/A5VHDX3X0UWN2VMLYD0Y/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/6QL9YXESHQ6UDYDYTG3U/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/5ZBQ5VZO6IA5VHDX3X0U/Control_1_0H_-_For_ASMAA-Stitching-02/Stacks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/L9YXESHQ6UDYDYTG3UP2/Control_1_24H_For_ASMAA_stitched/Stacks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/A5VHDX3X0UWN2VMLYD0Y/Control_1_48H_For_Asmaa_Stitched/Stacks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/6QL9YXESHQ6UDYDYTG3U/Control_1_72H_For_ASMAA_stitched/Stacks_crops_complete_window100_w320_h320, 
 ]
 training_segmentation_folders: [
   /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/5ZBQ5VZO6IA5VHDX3X0U/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/L9YXESHQ6UDYDYTG3UP2/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/A5VHDX3X0UWN2VMLYD0Y/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
-  /data/pg-organoid_data/6QL9YXESHQ6UDYDYTG3U/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/5ZBQ5VZO6IA5VHDX3X0U/Control_1_0H_-_For_ASMAA-Stitching-02/Masks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/L9YXESHQ6UDYDYTG3UP2/Control_1_24H_For_ASMAA_stitched/Masks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/A5VHDX3X0UWN2VMLYD0Y/Control_1_48H_For_Asmaa_Stitched/Masks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/6QL9YXESHQ6UDYDYTG3U/Control_1_72H_For_ASMAA_stitched/Masks_crops_complete_window100_w320_h320, 
 ]
 testing_images_folder: [
-  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Control_1_96H_-_For_ASMAA_stitched/Stacks_crops_complete_window100_w320_h320
 ]
 testing_segmentation_folder: [
-  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320, 
+  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Control_1_96H_-_For_ASMAA_stitched/Masks_crops_complete_window100_w320_h320
 ]
 
 k: 5
