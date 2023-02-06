@@ -1221,6 +1221,8 @@ class TrainerSegmentation(TrainerBase):
         validate_every = 1000,
         save_every = 1000,
         num_training_examples = None,
+        num_validation_examples = None,
+        num_testing_examples = None,
         epochs = None,
         only_save_first_batch = True,
         data_split = (0.8, 0.1, 0.1),
@@ -1236,12 +1238,11 @@ class TrainerSegmentation(TrainerBase):
         self.eval_metrics = eval_metrics
         self.only_save_first_batch = only_save_first_batch
 
-        num_examples = round(num_training_examples / data_split[0]) \
-            if num_training_examples and not validation_images_folder else None
-        num_validation_examples = round(num_training_examples / data_split[1]) \
-            if num_training_examples and not validation_images_folder else None
-        num_testing_examples = round(num_training_examples / data_split[2]) \
-            if num_training_examples and not validation_images_folder else None
+        num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
+        if not num_validation_examples:
+            num_validation_examples = round(num_training_examples / data_split[1]) if num_training_examples else None
+        if not num_testing_examples:
+            num_testing_examples = round(num_training_examples / data_split[2]) if num_training_examples else None
 
         dataset = DatasetSegmentation(
             images_folder=images_folder,
