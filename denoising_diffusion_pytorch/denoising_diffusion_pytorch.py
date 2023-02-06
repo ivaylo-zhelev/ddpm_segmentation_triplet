@@ -1240,9 +1240,9 @@ class TrainerSegmentation(TrainerBase):
 
         num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
         if not num_validation_examples:
-            num_validation_examples = round(num_training_examples / data_split[1]) if num_training_examples else None
+            num_validation_examples = round(num_examples * data_split[1]) if num_training_examples else None
         if not num_testing_examples:
-            num_testing_examples = round(num_training_examples / data_split[2]) if num_training_examples else None
+            num_testing_examples = round(num_examples * data_split[2]) if num_training_examples else None
 
         dataset = DatasetSegmentation(
             images_folder=images_folder,
@@ -1252,7 +1252,7 @@ class TrainerSegmentation(TrainerBase):
             augment_horizontal_flip=self.augment_horizontal_flip,
             convert_image_to=self.convert_image_to
         )
-        if validation_images_folder and testing_images_folder:
+        if validation_images_folder and validation_segmentations_folder:
             self.ds = dataset
             self.valid_ds = DatasetSegmentation(
                 images_folder=validation_images_folder,
@@ -1262,14 +1262,15 @@ class TrainerSegmentation(TrainerBase):
                 augment_horizontal_flip=self.augment_horizontal_flip,
                 convert_image_to=self.convert_image_to
             )
-            self.test_ds = DatasetSegmentation(
-                images_folder=testing_images_folder,
-                segmentations_folder=testing_segmentations_folder,
-                image_size=self.image_size,
-                num_examples=num_testing_examples,
-                augment_horizontal_flip=self.augment_horizontal_flip,
-                convert_image_to=self.convert_image_to
-            )
+            if testing_images_folder and testing_segmentations_folder:        
+                self.test_ds = DatasetSegmentation(
+                    images_folder=testing_images_folder,
+                    segmentations_folder=testing_segmentations_folder,
+                    image_size=self.image_size,
+                    num_examples=num_testing_examples,
+                    augment_horizontal_flip=self.augment_horizontal_flip,
+                    convert_image_to=self.convert_image_to
+                )
         else:
             generator = torch.Generator().manual_seed(seed)
             self.ds, self.valid_ds, self.test_ds = random_split(
