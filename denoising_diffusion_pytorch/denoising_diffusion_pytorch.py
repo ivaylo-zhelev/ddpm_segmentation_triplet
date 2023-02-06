@@ -919,11 +919,23 @@ class DatasetSegmentation(Dataset):
         self.images_folder = images_folder
         self.segmentations_folder = segmentations_folder
         self.image_mode = image_mode
-        segmentation_images = {path.name for path in segmentations_folder.glob("*")}
+
+        segmentation_images = {}
+
+        if isinstance(images_folder, list):
+            self.paths = [path for folder in images_folder for path in Path(folder).glob("*")]
+
+        if isinstance(segmentation_folder, list):
+            for folder in segmentation_folder:
+                segmentation_images.update({path: folder for path in Path(folder).glob("*")})
+        else:
+            segmentation_images = {path: segmentation_folder for path in Path(segmentation_folder).glob("*")}
+
         self.paths = [
-            (path_img, Path(segmentations_folder) / Path(path_img).name)
-            for path_img in self.paths if path_img.name in segmentation_images
+            (path_img, Path(segmentation_images[path_img]) / Path(path_img).name)
+            for path_img in self.paths if path_img in segmentation_images
         ]
+
         if num_examples:
             shuffle(self.paths)
             self.paths = self.paths[:num_examples]
