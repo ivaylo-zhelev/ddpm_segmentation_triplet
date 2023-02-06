@@ -927,13 +927,13 @@ class DatasetSegmentation(Dataset):
 
         if isinstance(segmentations_folder, list):
             for folder in segmentations_folder:
-                segmentation_images.update({path: folder for path in Path(folder).glob("*")})
+                segmentation_images.update({path.name: folder for path in Path(folder).glob("*")})
         else:
-            segmentation_images = {path: segmentations_folder for path in Path(segmentations_folder).glob("*")}
+            segmentation_images = {path.name: segmentations_folder for path in Path(segmentations_folder).glob("*")}
 
         self.paths = [
             (path_img, Path(segmentation_images[path_img]) / Path(path_img).name)
-            for path_img in self.paths if path_img in segmentation_images
+            for path_img in self.paths if path_img.name in segmentation_images
         ]
 
         if num_examples:
