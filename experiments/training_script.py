@@ -11,7 +11,6 @@ def train(config: TrainingConfig):
         trainer.load(config.load_milestone)
 
     trainer.train()
-    trainer.test()
 
 
 def main():

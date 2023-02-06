@@ -1,6 +1,6 @@
 images_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320
 segmentation_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320
-results_folder: /data/pg-organoid_data/segmentation_ddpm/results/experiment_mse
+results_folder: /data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_100_samples
 
 dim: 64
 dim_mults: [1, 2, 4, 8]
@@ -27,7 +27,7 @@ save_every: 20
 load_milestone: 0
 data_split: [0.8, 0.1, 0.1]
 num_samples: 25
-num_training_examples: 500
+num_training_examples: 100
 epochs: 80
 train_batch_size: 8
 train_lr: 0.000008

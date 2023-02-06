@@ -6,7 +6,6 @@ from experiments.config import TrainingConfig, SamplingConfig
 from experiments.setup_trainer import setup_trainer
 
 
-# TODO check if the sampling is not starting at the wrong end
 # TODO check if the condition for the time-dependent loss weighting should be dropped
 # TODO check if the validation loss works
 

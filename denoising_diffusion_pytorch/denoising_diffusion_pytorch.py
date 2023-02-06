@@ -1014,16 +1014,28 @@ class DatasetSegmentation(Dataset):
         self.images_folder = images_folder
         self.segmentations_folder = segmentations_folder
         self.image_mode = image_mode
-        segmentation_images = {path.name for path in segmentations_folder.glob("*")}
+
+        segmentation_images = {}
+
+        if isinstance(images_folder, list):
+            self.paths = [path for folder in images_folder for path in Path(folder).glob("*")]
+
+        if isinstance(segmentations_folder, list):
+            for folder in segmentations_folder:
+                segmentation_images.update({path.name: folder for path in Path(folder).glob("*")})
+        else:
+            segmentation_images = {path.name: segmentations_folder for path in Path(segmentations_folder).glob("*")}
+
         self.paths = [
-            (path_img, Path(segmentations_folder) / Path(path_img).name)
+            (path_img, Path(segmentation_images[path_img.name]) / Path(path_img).name)
             for path_img in self.paths if path_img.name in segmentation_images
         ]
+
         if num_examples:
             shuffle(self.paths)
             self.paths = self.paths[:num_examples]
         
-        self.num_examples = num_examples or len(self.paths)
+        self.num_examples = len(self.paths)
 
     def __getitem__(self, index):
         img_path, segm_path = self.paths[index]
@@ -1315,9 +1327,15 @@ class TrainerSegmentation(TrainerBase):
         diffusion_model,
         images_folder,
         segmentations_folder,
+        validation_images_folder = None,
+        validation_segmentations_folder = None,
+        testing_images_folder = None,
+        testing_segmentations_folder = None,
         validate_every = 1000,
         save_every = 1000,
         num_training_examples = None,
+        num_validation_examples = None,
+        num_testing_examples = None,
         epochs = None,
         only_save_first_batch = True,
         data_split = (0.8, 0.1, 0.1),
@@ -1335,6 +1353,11 @@ class TrainerSegmentation(TrainerBase):
         self.only_save_first_batch = only_save_first_batch
 
         num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
+        if not num_validation_examples:
+            num_validation_examples = round(num_examples * data_split[1]) if num_training_examples else None
+        if not num_testing_examples:
+            num_testing_examples = round(num_examples * data_split[2]) if num_training_examples else None
+
         dataset = DatasetSegmentation(
             images_folder=images_folder,
             segmentations_folder=segmentations_folder,
@@ -1343,13 +1366,34 @@ class TrainerSegmentation(TrainerBase):
             augment_horizontal_flip=self.augment_horizontal_flip,
             convert_image_to=self.convert_image_to
         )
+        if validation_images_folder and validation_segmentations_folder:
+            self.ds = dataset
+            self.valid_ds = DatasetSegmentation(
+                images_folder=validation_images_folder,
+                segmentations_folder=validation_segmentations_folder,
+                image_size=self.image_size,
+                num_examples=num_validation_examples,
+                augment_horizontal_flip=self.augment_horizontal_flip,
+                convert_image_to=self.convert_image_to
+            )
+            self.test_ds = None
+            if testing_images_folder and testing_segmentations_folder:        
+                self.test_ds = DatasetSegmentation(
+                    images_folder=testing_images_folder,
+                    segmentations_folder=testing_segmentations_folder,
+                    image_size=self.image_size,
+                    num_examples=num_testing_examples,
+                    augment_horizontal_flip=self.augment_horizontal_flip,
+                    convert_image_to=self.convert_image_to
+                )
+        else:
+            generator = torch.Generator().manual_seed(seed)
+            self.ds, self.valid_ds, self.test_ds = random_split(
+                dataset,
+                lengths=split_int_in_propotions(len(dataset), data_split),
+                generator=generator
+            )
 
-        generator = torch.Generator().manual_seed(seed)
-        self.ds, self.valid_ds, self.test_ds = random_split(
-            dataset,
-            lengths=split_int_in_propotions(len(dataset), data_split),
-            generator=generator
-        )
         valid_dl = DataLoader(
             self.valid_ds,
             batch_size=self.batch_size,
