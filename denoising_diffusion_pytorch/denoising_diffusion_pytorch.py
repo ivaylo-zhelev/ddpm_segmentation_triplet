@@ -932,7 +932,7 @@ class DatasetSegmentation(Dataset):
             segmentation_images = {path.name: segmentations_folder for path in Path(segmentations_folder).glob("*")}
 
         self.paths = [
-            (path_img, Path(segmentation_images[path_img]) / Path(path_img).name)
+            (path_img, Path(segmentation_images[path_img.name]) / Path(path_img).name)
             for path_img in self.paths if path_img.name in segmentation_images
         ]
 
