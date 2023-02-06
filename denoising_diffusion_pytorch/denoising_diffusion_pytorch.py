@@ -1214,6 +1214,10 @@ class TrainerSegmentation(TrainerBase):
         diffusion_model,
         images_folder,
         segmentations_folder,
+        validation_images_folder = None,
+        validation_segmentations_folder = None,
+        testing_images_folder = None,
+        testing_segmentations_folder = None,
         validate_every = 1000,
         save_every = 1000,
         num_training_examples = None,
@@ -1232,7 +1236,13 @@ class TrainerSegmentation(TrainerBase):
         self.eval_metrics = eval_metrics
         self.only_save_first_batch = only_save_first_batch
 
-        num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
+        num_examples = round(num_training_examples / data_split[0]) \
+            if num_training_examples and not validation_images_folder else None
+        num_validation_examples = round(num_training_examples / data_split[1]) \
+            if num_training_examples and not validation_images_folder else None
+        num_testing_examples = round(num_training_examples / data_split[2]) \
+            if num_training_examples and not validation_images_folder else None
+
         dataset = DatasetSegmentation(
             images_folder=images_folder,
             segmentations_folder=segmentations_folder,
@@ -1241,13 +1251,32 @@ class TrainerSegmentation(TrainerBase):
             augment_horizontal_flip=self.augment_horizontal_flip,
             convert_image_to=self.convert_image_to
         )
+        if validation_images_folder and testing_images_folder:
+            self.ds = dataset
+            self.valid_ds = DatasetSegmentation(
+                images_folder=validation_images_folder,
+                segmentations_folder=validation_segmentations_folder,
+                image_size=self.image_size,
+                num_examples=num_validation_examples,
+                augment_horizontal_flip=self.augment_horizontal_flip,
+                convert_image_to=self.convert_image_to
+            )
+            self.test_ds = DatasetSegmentation(
+                images_folder=testing_images_folder,
+                segmentations_folder=testing_segmentations_folder,
+                image_size=self.image_size,
+                num_examples=num_testing_examples,
+                augment_horizontal_flip=self.augment_horizontal_flip,
+                convert_image_to=self.convert_image_to
+            )
+        else:
+            generator = torch.Generator().manual_seed(seed)
+            self.ds, self.valid_ds, self.test_ds = random_split(
+                dataset,
+                lengths=split_int_in_propotions(len(dataset), data_split),
+                generator=generator
+            )
 
-        generator = torch.Generator().manual_seed(seed)
-        self.ds, self.valid_ds, self.test_ds = random_split(
-            dataset,
-            lengths=split_int_in_propotions(len(dataset), data_split),
-            generator=generator
-        )
         valid_dl = DataLoader(
             self.valid_ds,
             batch_size=self.batch_size,
