@@ -940,7 +940,7 @@ class DatasetSegmentation(Dataset):
             shuffle(self.paths)
             self.paths = self.paths[:num_examples]
         
-        self.num_examples = num_examples or len(self.paths)
+        self.num_examples = len(self.paths)
 
     def __getitem__(self, index):
         img_path, segm_path = self.paths[index]
