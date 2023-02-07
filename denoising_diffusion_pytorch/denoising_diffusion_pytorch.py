@@ -1057,7 +1057,7 @@ class TrainerBase():
         # for logging results in a folder periodically
         if self.accelerator.is_main_process:
             self.ema = EMA(self.model, beta=self.ema_decay, update_every=self.ema_update_every)
-            self.results_folder.mkdir(exist_ok=True)
+            self.results_folder.mkdir(parents=True, exist_ok=True)
 
         # step counter state
         self.step = 0
