@@ -15,8 +15,8 @@ def run_k_fold(training_config: TrainingConfig, k_fold_config: KFoldConfig, test
     for fold_num, config in enumerate(k_fold_configurations):
         print(f"Fold #{fold_num + 1}")
         trainer = setup_trainer(config)
-        trainer.train()
-
+        #trainer.train()
+    trainer.load(4)
     test_ds = DatasetSegmentation(
         images_folder=k_fold_config.testing_images_folder,
         segmentations_folder=k_fold_config.testing_segmentation_folder,
