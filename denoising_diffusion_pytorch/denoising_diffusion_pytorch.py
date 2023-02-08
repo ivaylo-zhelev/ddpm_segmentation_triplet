@@ -623,10 +623,10 @@ class GaussianDiffusionBase(nn.Module):
         return pred_img, x_start
 
     @torch.no_grad()
-    def sample(self, batch_size = 16, imgs = None, testing = False):
+    def sample(self, batch_size = 16, imgs = None, testing = False, results_folder = None):
         image_size, channels = self.image_size, self.channels
         sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
-        return sample_fn((batch_size, channels, image_size, image_size), img=imgs, testing=testing)
+        return sample_fn((batch_size, channels, image_size, image_size), img=imgs, testing=testing, results_folder=results_folder)
 
     @torch.no_grad()
     def p_sample_loop(self, shape, img = None, noise = None):
@@ -649,7 +649,7 @@ class GaussianDiffusionBase(nn.Module):
         return img
 
     @torch.no_grad()
-    def ddim_sample(self, shape, img = None, clip_denoised = True, noise = None, testing = False):
+    def ddim_sample(self, shape, img = None, clip_denoised = True, noise = None, results_folder = None, testing = False):
         batch, device, total_timesteps, sampling_timesteps, eta = shape[0], self.betas.device, self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta
 
         times = torch.linspace(-1, total_timesteps - 1, steps=sampling_timesteps + 1)   # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
@@ -663,7 +663,7 @@ class GaussianDiffusionBase(nn.Module):
             noise = default(noise, lambda: torch.randn_like(img))
             img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
-        results_folder = self.results_folder
+        results_folder = results_folder or self.results_folder
         if testing:
             results_folder = results_folder / TESTING_FOLDER
 
@@ -1517,7 +1517,7 @@ class TrainerSegmentation(TrainerBase):
         if original_image_folder:
             original_image_folder.mkdir(exist_ok=True, parents=True)
 
-        pred_segmentations = self.ema.ema_model.sample(batch_size=batch.shape[0], imgs=batch, testing=testing)
+        pred_segmentations = self.ema.ema_model.sample(batch_size=batch.shape[0], imgs=batch, testing=testing, results_folder=results_folder)
         imgs_list = list(torch.unbind(batch))
         segm_list = list(torch.unbind(pred_segmentations))
         gt_list = list(torch.unbind(ground_truth_segmentation)) if ground_truth_segmentation is not None \
