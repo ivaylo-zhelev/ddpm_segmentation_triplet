@@ -16,8 +16,8 @@ def infer(config: TrainingConfig):
     trainer.load(get_last_checkpoint(config.results_folder))
 
     test_ds = DatasetSegmentation(
-        images_folder=original_results_folder / "image",
-        segmentations_folder=original_results_folder / "ground_truth" ,
+        images_folder=original_results_folder.parent / "image",
+        segmentations_folder=original_results_folder.parent / "ground_truth" ,
         image_size=config.image_size
     )
 
