@@ -51,3 +51,21 @@ def extract_loss_function_cross_fold(
         full_df.plot("Training iteration", f"loss_{fold}", ax=ax)
 
     plt.savefig(model_folder_path / "loss_function.png")
+
+
+def main():
+    result_paths = [
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_50_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_100_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_200_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_500_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_50_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_100_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_200_samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse",
+    ]
+    [extract_loss_function_cross_fold(model_path) for model_path in result_paths]
+
+
+if __name__ == "__main__":
+    main()
