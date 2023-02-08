@@ -5,6 +5,7 @@ import ruamel.yaml as yaml
 from denoising_diffusion_pytorch import DatasetSegmentation
 from experiments.config import TrainingConfig, KFoldConfig
 from experiments.setup_trainer import setup_trainer
+from experiments.postanalysis_utils import extract_loss_function_cross_fold
 
 
 def run_k_fold(training_config: TrainingConfig, k_fold_config: KFoldConfig, test_steps: Optional[int] = None):
@@ -22,6 +23,8 @@ def run_k_fold(training_config: TrainingConfig, k_fold_config: KFoldConfig, test
         image_size=training_config.image_size
     )
     trainer.test(test_ds=test_ds, test_steps=test_steps, results_folder=training_config.results_folder)
+
+    extract_loss_function_cross_fold(training_config.results_folder, k=k_fold_config.k)
 
 
 def main():
