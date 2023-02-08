@@ -38,8 +38,7 @@ def extract_loss_function_cross_fold(
 
     full_df = reduce(
         lambda left, right: pd.merge(left, right,
-                                     on="epoch", how="outer", suffixes=(None, f"_{right.index.name}"),
-                                     left_index=True, right_index=True),
+                                     on="epoch", how="outer", suffixes=(None, f"_{right.index.name}")),
         [pd.DataFrame(columns=("epoch", "loss"))] + loss_dfs,
     )
     full_df.to_csv(model_folder_path / "validation_loss.csv")
