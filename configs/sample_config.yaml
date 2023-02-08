@@ -39,7 +39,7 @@ num_training_examples: null
 # IMPORTANT! If epochs is not null, save_every and validate_every are with respect to the epochs, not the training
 # iterations.
 epochs: null 
-train_batch_size: 8
+train_batch_size: 4
 train_lr: 0.00008
 train_num_steps: 100000    
 gradient_accumulate_every: 2
