@@ -50,6 +50,7 @@ def extract_loss_function_cross_fold(
         full_df.plot("Training iteration", f"loss_{fold}", ax=ax)
 
     plt.savefig(model_folder_path / "loss_function.png")
+    plt.close()
 
 
 def main():
