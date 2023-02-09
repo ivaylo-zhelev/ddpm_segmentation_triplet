@@ -1,6 +1,6 @@
 images_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Stacks_crops_complete_window100_w320_h320
 segmentation_folder: /data/pg-organoid_data/1CA5KMCR7K7MT53OS7FG/Starvation_1_24H_For_ASMAA_Stitched/Masks_crops_complete_window100_w320_h320
-results_folder: /data/pg-organoid_data/segmentation_ddpm/results/experiment_500_samples
+results_folder: /data/pg-organoid_data/segmentation_ddpm/results/experiment_triplet_4
 
 dim: 64
 dim_mults: [1, 2, 4, 8]
