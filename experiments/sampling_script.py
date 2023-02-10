@@ -6,10 +6,6 @@ from experiments.config import TrainingConfig, SamplingConfig
 from experiments.setup_trainer import setup_trainer
 
 
-# TODO check if the condition for the time-dependent loss weighting should be dropped
-# TODO check if the validation loss works
-
-
 def sample(config, test_steps: Optional[int] = None):
     trainer = setup_trainer(config)
     trainer.load(config.load_milestone)
