@@ -13,10 +13,10 @@ training_segmentation_folders: [
   /data/pg-organoid_data/6QL9YXESHQ6UDYDYTG3U/Control_1_72H_For_ASMAA_stitched/Masks_crops_complete_window100_w320_h320, 
 ]
 testing_images_folder: [
-  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Control_1_96H_-_For_ASMAA_stitched/Stacks_crops_complete_window100_w320_h320
+  /data/pg-organoid_data/289RM7EZ02HD117WJ5IM/Starvation_1_48H_-_For_ASMAA-Stitched/Stacks_crops_complete_window100_w320_h320
 ]
 testing_segmentation_folder: [
-  /data/pg-organoid_data/P2R2WP36RVDLHB15I48C/Control_1_96H_-_For_ASMAA_stitched/Masks_crops_complete_window100_w320_h320
+  /data/pg-organoid_data/289RM7EZ02HD117WJ5IM/Starvation_1_48H_-_For_ASMAA-Stitched/Masks_crops_complete_window100_w320_h320
 ]
 
 k: 5
