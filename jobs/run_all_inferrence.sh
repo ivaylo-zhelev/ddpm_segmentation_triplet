@@ -24,3 +24,6 @@ python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/in
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_mse_100_samples.yaml
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_mse_200_samples.yaml
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_mse.yaml
+python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_triplet_4.yaml
+python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_triplet_8.yaml
+python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_triplet_24.yaml
