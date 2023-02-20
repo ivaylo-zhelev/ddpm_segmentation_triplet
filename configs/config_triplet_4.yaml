@@ -9,7 +9,7 @@ image_size: 320
 margin: 4.0
 loss_type: triplet
 timesteps: 50           
-sampling_timesteps: 1
+sampling_timesteps: 20
 noising_timesteps: 5
 ddim_sampling_eta: 0.0
 p2_loss_weight_gamma: 1. 

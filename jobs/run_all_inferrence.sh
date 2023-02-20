@@ -15,6 +15,7 @@ module load CUDA
 module load Boost
 
 source /data/s3782255/.envs/diffusion_segm/bin/activate
+python -m pip install /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/
 
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_50_samples.yaml
 python /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/experiments/inferrence_script.py -c /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/configs/config_100_samples.yaml

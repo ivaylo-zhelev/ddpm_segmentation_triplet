@@ -4,6 +4,7 @@ cd /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet
 git pull
 
 source /data/s3782255/.envs/diffusion_segm/bin/activate
+python -m pip install /home/s3782255/segmentation_ddpm/ddpm_segmentation_triplet/
 pip uninstall denoising_diffusion_triplet
 pip install .
 
