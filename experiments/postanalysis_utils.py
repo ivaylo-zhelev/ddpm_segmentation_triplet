@@ -19,6 +19,7 @@ def get_last_checkpoint(model_folder: PathLike):
 
 def extract_loss_function_cross_fold(
     model_folder_path: PathLike,
+    graph_title: str,
     fold_folders_names: Optional[List[str]] = None,
     last_checkpoints: Optional[Mapping[str, int]] = None,
     k: int = 5
@@ -45,7 +46,7 @@ def extract_loss_function_cross_fold(
 
     full_df.rename(columns={"epoch": "Training iteration"}, inplace=True)
     num_folds = len(fold_folders_names)
-    ax = plt.subplot(xlabel="Training iteration", ylabel="Loss value", title=f"Training for the {num_folds} folds")
+    ax = plt.subplot(xlabel="Training iteration", ylabel="Loss value", title=graph_title)
     for fold in fold_folders_names:
         full_df.plot("Training iteration", f"loss_{fold}", ax=ax)
 
@@ -54,17 +55,20 @@ def extract_loss_function_cross_fold(
 
 
 def main():
-    result_paths = [
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_50_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_100_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_200_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_500_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_50_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_100_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_200_samples",
-        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse",
-    ]
-    [extract_loss_function_cross_fold(model_path) for model_path in result_paths]
+    result_paths = {
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_50_samples": "5-fold validation loss descent with\ntriplet loss for 50 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_100_samples": "5-fold validation loss descent with\ntriplet loss for 100 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_200_samples": "5-fold validation loss descent with\ntriplet loss for 200 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_500_samples": "5-fold validation loss descent with\ntriplet loss for 500 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_50_samples": "5-fold validation loss descent with\nMSE for 50 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_100_samples": "5-fold validation loss descent with\nMSE for 100 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse_200_samples": "5-fold validation loss descent with\nMSE for 200 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_mse": "5-fold validation loss descent with\nMSE for 500 samples",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_triplet_4": "5-fold validation loss descent with\na margin value of 4.0",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_triplet_8": "5-fold validation loss descent with\na margin value of 8.0",
+        "/data/pg-organoid_data/segmentation_ddpm/results/experiment_triplet_24": "5-fold validation loss descent with\na margin value of 24.0"
+    }
+    [extract_loss_function_cross_fold(model_path, graph_title) for model_path, graph_title in result_paths.items()]
 
 
 if __name__ == "__main__":
