@@ -5,17 +5,23 @@ from random import random
 from functools import partial
 from collections import namedtuple
 from multiprocessing import cpu_count
+from math import ceil
+from random import shuffle
+import matplotlib.pyplot as plt
 
 import torch
 from torch import nn, einsum
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+import torch.utils.data as torch_data
+from torch.utils.data import DataLoader, random_split
 
-from torch.optim import Adam
+from torch.optim import Adam, Adagrad, RMSprop, Rprop
 from torchvision import transforms as T, utils
 
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
+
+from pandas import DataFrame
 
 from PIL import Image
 from tqdm.auto import tqdm
@@ -23,9 +29,25 @@ from ema_pytorch import EMA
 
 from accelerate import Accelerator
 
+from denoising_diffusion_pytorch.evaluation import EVAL_FUNCTIONS
+from denoising_diffusion_pytorch.loss_functions import (
+    mse, triplet_margin_loss, exact_triplet_margin_loss, regularized_triplet_loss, triplet_loss_dynamic_margin)
 # constants
 
-ModelPrediction =  namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
+ModelPrediction = namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
+VALIDATION_FOLDER = "validation"
+TESTING_FOLDER = "testing"
+GENERATED_FOLDER = "generated"
+GT_FOLDER = "ground_truths"
+IMAGE_FOLDER = "original_images"
+RESULTS_FILE = "evaluation_results.csv"
+
+OPTIMIZERS_DICT = {
+    "adam": (Adam, ("lr", "betas")),
+    "rprop": (Rprop, ("lr", "etas", "step_sizes")),
+    "adagrad": (Adagrad, ("lr", "lr_decay", "weight_decay")),
+    "rmsprop": (RMSprop, ("lr", "momentum", "alpha", "weight_decay"))
+}
 
 # helpers functions
 
@@ -47,6 +69,18 @@ def cycle(dl):
 
 def has_int_squareroot(num):
     return (math.sqrt(num) ** 2) == num
+
+def split_int_in_propotions(num, split):
+    lengths = [math.floor(prop * num) for prop in split]
+    remainder = num - sum(lengths)
+
+    ind = 0
+    while remainder > 0:
+        lengths[ind % len(split)] += 1
+        ind += 1
+        remainder -= 1
+
+    return lengths
 
 def num_to_groups(num, divisor):
     groups = num // divisor
@@ -265,7 +299,7 @@ class Unet(nn.Module):
         dim,
         init_dim = None,
         out_dim = None,
-        dim_mults=(1, 2, 4, 8),
+        dim_mults = (1, 2, 4, 8),
         channels = 3,
         self_condition = False,
         resnet_block_groups = 8,
@@ -413,34 +447,32 @@ def cosine_beta_schedule(timesteps, s = 0.008):
     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
     return torch.clip(betas, 0, 0.999)
 
-class GaussianDiffusion(nn.Module):
+
+class GaussianDiffusionBase(nn.Module):
     def __init__(
         self,
         model,
-        *,
         image_size,
         timesteps = 1000,
         sampling_timesteps = None,
-        loss_type = 'l1',
+        noising_timesteps = None,
         objective = 'pred_noise',
         beta_schedule = 'cosine',
-        p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
+        p2_loss_weight_gamma = 1., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
         p2_loss_weight_k = 1,
-        ddim_sampling_eta = 1.
+        ddim_sampling_eta = 0.
     ):
         super().__init__()
-        assert not (type(self) == GaussianDiffusion and model.channels != model.out_dim)
         assert not model.random_or_learned_sinusoidal_cond
 
         self.model = model
         self.channels = self.model.channels
         self.self_condition = self.model.self_condition
-
-        self.image_size = image_size
-
         self.objective = objective
 
         assert objective in {'pred_noise', 'pred_x0', 'pred_v'}, 'objective must be either pred_noise (predict noise) or pred_x0 (predict image start) or pred_v (predict v [v-parameterization as defined in appendix D of progressive distillation paper, used in imagen-video successfully])'
+
+        self.image_size = image_size
 
         if beta_schedule == 'linear':
             betas = linear_beta_schedule(timesteps)
@@ -455,16 +487,16 @@ class GaussianDiffusion(nn.Module):
 
         timesteps, = betas.shape
         self.num_timesteps = int(timesteps)
-        self.loss_type = loss_type
 
         # sampling related parameters
 
         self.sampling_timesteps = default(sampling_timesteps, timesteps) # default num sampling timesteps to number of timesteps at training
-
+        
         assert self.sampling_timesteps <= timesteps
+        
+        self.noising_timesteps = noising_timesteps or self.sampling_timesteps
         self.is_ddim_sampling = self.sampling_timesteps < timesteps
         self.ddim_sampling_eta = ddim_sampling_eta
-
         # helper function to register buffer from float64 to float32
 
         register_buffer = lambda name, val: self.register_buffer(name, val.to(torch.float32))
@@ -523,15 +555,6 @@ class GaussianDiffusion(nn.Module):
             extract(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
         )
 
-    def q_posterior(self, x_start, x_t, t):
-        posterior_mean = (
-            extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
-            extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
-        )
-        posterior_variance = extract(self.posterior_variance, t, x_t.shape)
-        posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
-        return posterior_mean, posterior_variance, posterior_log_variance_clipped
-
     def model_predictions(self, x, t, x_self_cond = None, clip_x_start = False):
         model_output = self.model(x, t, x_self_cond)
         maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
@@ -564,6 +587,15 @@ class GaussianDiffusion(nn.Module):
         model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start = x_start, x_t = x, t = t)
         return model_mean, posterior_variance, posterior_log_variance, x_start
 
+    def q_posterior(self, x_start, x_t, t):
+        posterior_mean = (
+            extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
+            extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
+        )
+        posterior_variance = extract(self.posterior_variance, t, x_t.shape)
+        posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
+        return posterior_mean, posterior_variance, posterior_log_variance_clipped
+
     @torch.no_grad()
     def p_sample(self, x, t: int, x_self_cond = None, clip_denoised = True):
         b, *_, device = *x.shape, x.device
@@ -574,14 +606,25 @@ class GaussianDiffusion(nn.Module):
         return pred_img, x_start
 
     @torch.no_grad()
-    def p_sample_loop(self, shape):
+    def sample(self, batch_size = 16, imgs = None):
+        image_size, channels = self.image_size, self.channels
+        sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
+        return sample_fn((batch_size, channels, image_size, image_size), img=imgs)
+
+    @torch.no_grad()
+    def p_sample_loop(self, shape, img = None, noise = None):
         batch, device = shape[0], self.betas.device
 
-        img = torch.randn(shape, device=device)
+        if img is None:
+            img = torch.randn(shape, device=device)
+        else:
+            t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
+            noise = default(noise, lambda: torch.randn_like(img))
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         x_start = None
 
-        for t in tqdm(reversed(range(0, self.num_timesteps)), desc = 'sampling loop time step', total = self.num_timesteps):
+        for t in tqdm(reversed(range(0, self.sampling_timesteps)), desc = 'sampling loop time step', total = self.sampling_timesteps):
             self_cond = x_start if self.self_condition else None
             img, x_start = self.p_sample(img, t, self_cond)
 
@@ -589,14 +632,19 @@ class GaussianDiffusion(nn.Module):
         return img
 
     @torch.no_grad()
-    def ddim_sample(self, shape, clip_denoised = True):
-        batch, device, total_timesteps, sampling_timesteps, eta, objective = shape[0], self.betas.device, self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta, self.objective
+    def ddim_sample(self, shape, img = None, clip_denoised = True, noise = None):
+        batch, device, total_timesteps, sampling_timesteps, eta = shape[0], self.betas.device, self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta
 
         times = torch.linspace(-1, total_timesteps - 1, steps=sampling_timesteps + 1)   # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
         times = list(reversed(times.int().tolist()))
         time_pairs = list(zip(times[:-1], times[1:])) # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
 
-        img = torch.randn(shape, device = device)
+        t_batched = torch.stack([torch.tensor(self.noising_timesteps, device = device)] * batch)
+        if img is None:
+            img = torch.randn(shape, device=device)
+        else:
+            noise = default(noise, lambda: torch.randn_like(img))
+            img = self.q_sample(normalize_to_neg_one_to_one(img), t_batched, noise=noise)
 
         x_start = None
 
@@ -624,11 +672,41 @@ class GaussianDiffusion(nn.Module):
         img = unnormalize_to_zero_to_one(img)
         return img
 
-    @torch.no_grad()
-    def sample(self, batch_size = 16):
-        image_size, channels = self.image_size, self.channels
-        sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
-        return sample_fn((batch_size, channels, image_size, image_size))
+    def q_sample(self, x_start, t, noise=None):
+        noise = default(noise, lambda: torch.randn_like(x_start))
+
+        return (
+            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+        )
+
+
+class GaussianDiffusion(GaussianDiffusionBase):
+    def __init__(
+        self,
+        model,
+        *,
+        image_size,
+        timesteps = 1000,
+        sampling_timesteps = None,
+        loss_type = 'l1',
+        beta_schedule = 'cosine',
+        p2_loss_weight_gamma = 0., # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
+        p2_loss_weight_k = 1,
+        ddim_sampling_eta = 1.
+    ):
+        super().__init__(
+            model=model,
+            image_size=image_size,
+            timesteps=timesteps,
+            sampling_timesteps=sampling_timesteps,
+            beta_schedule=beta_schedule,
+            p2_loss_weight_gamma=p2_loss_weight_gamma,
+            p2_loss_weight_k=p2_loss_weight_k,
+            ddim_sampling_eta=ddim_sampling_eta
+        )
+        assert not (type(self) == GaussianDiffusion and model.channels != model.out_dim)
+        self.loss_type = loss_type
 
     @torch.no_grad()
     def interpolate(self, x1, x2, t = None, lam = 0.5):
@@ -645,14 +723,6 @@ class GaussianDiffusion(nn.Module):
             img = self.p_sample(img, torch.full((b,), i, device=device, dtype=torch.long))
 
         return img
-
-    def q_sample(self, x_start, t, noise=None):
-        noise = default(noise, lambda: torch.randn_like(x_start))
-
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
-        )
 
     @property
     def loss_fn(self):
@@ -709,14 +779,105 @@ class GaussianDiffusion(nn.Module):
         img = normalize_to_neg_one_to_one(img)
         return self.p_losses(img, t, *args, **kwargs)
 
-# dataset classes
 
-class Dataset(Dataset):
+class GaussianDiffusionSegmentationMapping(GaussianDiffusionBase):
+    def __init__(
+        self,
+        model,
+        image_size,
+        margin = 1.0,
+        regularization_margin = 10.0,
+        regularize_to_white_image = True,
+        loss_type = "triplet",
+        is_loss_time_dependent = False,
+        use_ddim_sampling = False,
+        *args,
+        **kwargs
+    ):
+        super().__init__(model, image_size, *args, **kwargs)
+        self.loss_type = loss_type
+        self.margin = margin
+        self.regularization_margin = regularization_margin
+        self.regularize_to_white_image = regularize_to_white_image
+        self.is_loss_time_dependent = is_loss_time_dependent
+        self.is_ddim_sampling = self.is_ddim_sampling or use_ddim_sampling
+        # The objective for this class should always be pred_x_start since we are not predicting the noise.
+        # This is because the target is the segmentation map which is not an exact function of the input images
+        # noise
+        self.objective = "pred_x0"
+
+    @property
+    def loss_fn(self):
+        if self.loss_type == "triplet":
+            return triplet_margin_loss
+        elif self.loss_type == "mse":
+            return mse
+        elif self.loss_type == "exact_triplet":
+            return exact_triplet_margin_loss
+        elif self.loss_type == "triplet_dynamic_margin":
+            return triplet_loss_dynamic_margin
+        elif self.loss_type == "regularized_triplet":
+            return regularized_triplet_loss
+        else:
+            raise ValueError(f"Loss function of type {self.loss_type} is not supported")
+
+    def p_losses(self, x_start, b_start, t, noise=None):
+        if x_start.shape != b_start.shape:
+            raise ValueError("The dimensionality of the image and the segmentation maps must be the same")
+
+        b, c, h, w = x_start.shape
+        noise = default(noise, lambda: torch.randn_like(x_start))
+
+        # noise sample
+        x = self.q_sample(x_start=x_start, t=t, noise=noise)
+
+        # if doing self-conditioning, 50% of the time, predict x_start from current set of times
+        # and condition with unet with that
+        # this technique will slow down training by 25%, but seems to lower FID significantly
+        x_self_cond = None
+        if self.self_condition and random() < 0.5:
+            with torch.no_grad():
+                x_self_cond = self.predict_start_from_noise(x, t, noise=noise)
+                x_self_cond.detach_()
+
+        # predict and take gradient step
+        model_out = self.model_predictions(x, t, x_self_cond, clip_x_start=True).pred_x_start
+
+        positive, negative = (self.q_sample(x_start=b_start, t=t, noise=noise), x) if self.is_loss_time_dependent \
+            else (b_start, x_start)
+        loss = self.loss_fn(anchor=model_out,
+                            positive=positive,
+                            negative=negative,
+                            margin=self.margin,
+                            regularization_margin=self.regularization_margin,
+                            regularize_to_white_image=True,
+                            normalized_to_neg_one_to_one=True,
+                            reduction='none')
+        loss = reduce(loss, 'b ... -> b (...)', 'mean')
+
+        if not self.is_loss_time_dependent:
+            loss = loss * extract(self.p2_loss_weight, t, loss.shape)
+        return loss.mean()
+
+    def forward(self, sample_pair, *args, **kwargs):
+        img, segmentation = torch.unbind(sample_pair, dim=1)
+        b, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
+        _, _, h_segm, w_segm = segmentation.shape
+        assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
+        assert h == h_segm and w == w_segm, f"the images and their segmentation must be the same size: {img_size}"
+        t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
+
+        img = normalize_to_neg_one_to_one(img)
+        segmentation = normalize_to_neg_one_to_one(segmentation)
+        return self.p_losses(img, segmentation, t, *args, **kwargs)
+
+
+class Dataset(torch_data.Dataset):
     def __init__(
         self,
         folder,
         image_size,
-        exts = ['jpg', 'jpeg', 'png', 'tiff'],
+        exts = ['jpg', 'jpeg', 'png', 'tiff', 'tif'],
         augment_horizontal_flip = False,
         convert_image_to = None
     ):
@@ -743,23 +904,73 @@ class Dataset(Dataset):
         img = Image.open(path)
         return self.transform(img)
 
-# trainer class
 
-class Trainer(object):
+class DatasetSegmentation(Dataset):
+    def __init__(
+        self,
+        images_folder,
+        segmentations_folder,
+        image_mode = "RGB",
+        num_examples = None,
+        *args,
+        **kwargs
+    ):
+        super().__init__(images_folder, *args, **kwargs)
+        self.images_folder = images_folder
+        self.segmentations_folder = segmentations_folder
+        self.image_mode = image_mode
+
+        segmentation_images = {}
+
+        if isinstance(images_folder, list):
+            self.paths = [path for folder in images_folder for path in Path(folder).glob("*")]
+
+        if isinstance(segmentations_folder, list):
+            for folder in segmentations_folder:
+                segmentation_images.update({path.name: folder for path in Path(folder).glob("*")})
+        else:
+            segmentation_images = {path.name: segmentations_folder for path in Path(segmentations_folder).glob("*")}
+
+        self.paths = [
+            (path_img, Path(segmentation_images[path_img.name]) / Path(path_img).name)
+            for path_img in self.paths if path_img.name in segmentation_images
+        ]
+
+        if num_examples:
+            shuffle(self.paths)
+            self.paths = self.paths[:num_examples]
+        
+        self.num_examples = len(self.paths)
+
+    def __getitem__(self, index):
+        img_path, segm_path = self.paths[index]
+        img = Image.open(img_path).convert(self.image_mode)
+        segm = Image.open(segm_path).convert(self.image_mode)
+        return torch.stack((self.transform(img), self.transform(segm)), dim=0)
+
+
+# trainer class
+class TrainerBase():
     def __init__(
         self,
         diffusion_model,
-        folder,
         *,
+        segmentation_folder = None,
         train_batch_size = 16,
         gradient_accumulate_every = 1,
         augment_horizontal_flip = True,
         train_lr = 1e-4,
         train_num_steps = 100000,
         ema_update_every = 10,
+        optimizer = "adam",
         ema_decay = 0.995,
         adam_betas = (0.9, 0.99),
-        save_and_sample_every = 1000,
+        lr_decay = 0,
+        weight_decay = 0,
+        rms_prop_alpha = 0.99,
+        momentum = 0,
+        etas = (0.5, 1.2),
+        step_sizes = (1e-06, 50),
         num_samples = 25,
         results_folder = './results',
         amp = False,
@@ -780,7 +991,6 @@ class Trainer(object):
 
         assert has_int_squareroot(num_samples), 'number of samples must have an integer square root'
         self.num_samples = num_samples
-        self.save_and_sample_every = save_and_sample_every
 
         self.batch_size = train_batch_size
         self.gradient_accumulate_every = gradient_accumulate_every
@@ -788,32 +998,71 @@ class Trainer(object):
         self.train_num_steps = train_num_steps
         self.image_size = diffusion_model.image_size
 
-        # dataset and dataloader
+        self.train_loss_dict = {}
+        self.validation_loss_dict = {}
 
-        self.ds = Dataset(folder, self.image_size, augment_horizontal_flip = augment_horizontal_flip, convert_image_to = convert_image_to)
-        dl = DataLoader(self.ds, batch_size = train_batch_size, shuffle = True, pin_memory = True, num_workers = cpu_count())
+        self.optimizer = optimizer
+        self.train_lr = train_lr
+        
+        self.adam_betas = adam_betas
+        self.lr_decay = lr_decay
+        self.weight_decay = weight_decay
+        self.rms_prop_alpha = rms_prop_alpha
+        self.momentum = momentum
+        self.etas = etas
+        self.step_sizes = step_sizes
+
+        self.ema_decay = ema_decay
+        self.ema_update_every = ema_update_every
+
+        self.augment_horizontal_flip = augment_horizontal_flip
+        self.convert_image_to = convert_image_to
+        
+        self.results_folder = Path(results_folder)
+
+    @property
+    def IS_SEGMENTATION_TRAINER(self):
+        pass
+
+    # dataset and dataloader
+    @property
+    def ds(self):
+        return self._ds
+    
+    @ds.setter
+    def ds(self, ds):
+        self._ds = ds
+        dl = DataLoader(self.ds, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
 
         dl = self.accelerator.prepare(dl)
         self.dl = cycle(dl)
 
         # optimizer
-
-        self.opt = Adam(diffusion_model.parameters(), lr = train_lr, betas = adam_betas)
+        opt_kwargs = {
+            "lr": self.train_lr,
+            "betas": self.adam_betas,
+            "lr_decay": self.lr_decay,
+            "etas": self.etas,
+            "step_sizes": self.step_sizes,
+            "weight_decay": self.weight_decay,
+            "alpha": self.rms_prop_alpha,
+            "momentum": self.momentum
+        }
+        opt_kwargs = {k: v for k, v in opt_kwargs.items() if k in OPTIMIZERS_DICT[self.optimizer][1]}
+        try:
+            self.opt = OPTIMIZERS_DICT[self.optimizer][0](self.model.parameters(), **opt_kwargs)
+        except KeyError:
+            assert print(f"{self.optimizer} is not a valid optimizer. Available options are {OPTIMIZERS_DICT.keys()}")
 
         # for logging results in a folder periodically
-
         if self.accelerator.is_main_process:
-            self.ema = EMA(diffusion_model, beta = ema_decay, update_every = ema_update_every)
-
-            self.results_folder = Path(results_folder)
-            self.results_folder.mkdir(exist_ok = True)
+            self.ema = EMA(self.model, beta=self.ema_decay, update_every=self.ema_update_every)
+            self.results_folder.mkdir(parents=True, exist_ok=True)
 
         # step counter state
-
         self.step = 0
 
         # prepare model, dataloader, optimizer with accelerator
-
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
 
     def save(self, milestone):
@@ -822,6 +1071,8 @@ class Trainer(object):
 
         data = {
             'step': self.step,
+            'train_loss_dict': self.train_loss_dict,
+            'validation_loss_dict': self.validation_loss_dict,
             'model': self.accelerator.get_state_dict(self.model),
             'opt': self.opt.state_dict(),
             'ema': self.ema.state_dict(),
@@ -829,6 +1080,27 @@ class Trainer(object):
         }
 
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
+
+        training_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.train_loss_dict.items()]
+        validation_loss_data = [{"epoch": epoch, "loss": loss} for (epoch, loss) in self.validation_loss_dict.items()]
+
+        training_loss_df = DataFrame(
+            data=training_loss_data,
+            index=list(range(len(self.train_loss_dict))))
+        validation_loss_df = DataFrame(
+            data=validation_loss_data,
+            index=list(range(len(self.validation_loss_dict))))
+
+        training_loss_df.to_csv(self.results_folder / f'training_loss-{milestone}.csv')
+        validation_loss_df.to_csv(self.results_folder / f'validation_loss-{milestone}.csv')
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        training_loss_df.plot(x="epoch", y="loss", label="training_loss", ax=ax,
+                              xlabel="Epoch", ylabel="Loss value", title="Loss during training")
+        validation_loss_df.plot(x="epoch", y="loss", label="validation_loss", ax=ax,
+                                xlabel="Epoch", ylabel="Loss value", title="Loss during training")
+        plt.savefig(self.results_folder / "loss_function.png")
 
     def load(self, milestone):
         accelerator = self.accelerator
@@ -840,6 +1112,8 @@ class Trainer(object):
         model.load_state_dict(data['model'])
 
         self.step = data['step']
+        self.train_loss_dict = data['train_loss_dict']
+        self.validation_loss_dict = data['validation_loss_dict']
         self.opt.load_state_dict(data['opt'])
         self.ema.load_state_dict(data['ema'])
 
@@ -851,9 +1125,7 @@ class Trainer(object):
         device = accelerator.device
 
         with tqdm(initial = self.step, total = self.train_num_steps, disable = not accelerator.is_main_process) as pbar:
-
             while self.step < self.train_num_steps:
-
                 total_loss = 0.
 
                 for _ in range(self.gradient_accumulate_every):
@@ -864,10 +1136,14 @@ class Trainer(object):
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
 
-                    self.accelerator.backward(loss)
+                    if torch.any(torch.isnan(loss)):
+                        accelerator.print(f"[WARNING]: NaN loss at step {self.step}")
+                    else:
+                        self.accelerator.backward(loss)
 
                 accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                pbar.set_description(f'loss: {total_loss:.4f}')
+                pbar.set_description(f'Training loss: {total_loss:.4f}')
+                self.train_loss_dict[self.step] = total_loss
 
                 accelerator.wait_for_everyone()
 
@@ -880,19 +1156,359 @@ class Trainer(object):
                 if accelerator.is_main_process:
                     self.ema.to(device)
                     self.ema.update()
+                    self.validate_or_sample()
 
-                    if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                        self.ema.ema_model.eval()
-
-                        with torch.no_grad():
-                            milestone = self.step // self.save_and_sample_every
-                            batches = num_to_groups(self.num_samples, self.batch_size)
-                            all_images_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=n), batches))
-
-                        all_images = torch.cat(all_images_list, dim = 0)
-                        utils.save_image(all_images, str(self.results_folder / f'sample-{milestone}.png'), nrow = int(math.sqrt(self.num_samples)))
+                    if self.step != 0 and self.step % self.save_every == 0:
+                        milestone = self.step // self.save_every
                         self.save(milestone)
 
                 pbar.update(1)
 
-        accelerator.print('training complete')
+        accelerator.print('Training complete!')
+
+    @torch.no_grad()
+    def validate_or_sample(self, milestone, device):
+        pass
+
+class Trainer(TrainerBase):
+    IS_SEGMENTATION_TRAINER = False
+
+    def __init__(
+        self,
+        diffusion_model,
+        folder,
+        save_and_sample_every = 1000,
+        *args,
+        **kwargs
+    ):
+        super().__init__(diffusion_model, *args, **kwargs)
+        self.sample_every = save_and_sample_every
+        self.save_every = save_and_sample_every
+        self.ds = Dataset(
+            folder,
+            self.image_size,
+            augment_horizontal_flip=self.augment_horizontal_flip,
+            convert_image_to=self.convert_image_to
+        )
+
+    @torch.no_grad()
+    def validate_or_sample(self):
+        if self.step != 0 and self.step % self.sample_every == 0:
+            milestone = self.step // self.sample_every
+
+            self.ema.ema_model.eval()
+            batches = num_to_groups(self.num_samples, self.batch_size)
+            all_images_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=n), batches))
+
+            for ind, sample in enumerate(all_images_list):
+                utils.save_image(
+                    sample,
+                    self.results_folder / f"sample_{milestone}_{ind}.png")       
+
+
+class TrainerSegmentation(TrainerBase):
+    IS_SEGMENTATION_TRAINER = True
+
+    def __init__(
+        self,
+        diffusion_model,
+        images_folder,
+        segmentations_folder,
+        validation_images_folder = None,
+        validation_segmentations_folder = None,
+        testing_images_folder = None,
+        testing_segmentations_folder = None,
+        validate_every = 1000,
+        save_every = 1000,
+        num_training_examples = None,
+        num_validation_examples = None,
+        num_testing_examples = None,
+        epochs = None,
+        only_save_first_batch = True,
+        data_split = (0.8, 0.1, 0.1),
+        eval_metrics = EVAL_FUNCTIONS.keys(),
+        seed = 42,
+        *args,
+        **kwargs
+    ):
+        super().__init__(diffusion_model, *args, **kwargs)
+        self.validate_every = validate_every
+        self.save_every = save_every
+        self.has_already_validated = False
+        self.eval_metrics = eval_metrics
+        self.only_save_first_batch = only_save_first_batch
+
+        num_examples = round(num_training_examples / data_split[0]) if num_training_examples else None
+        if not num_validation_examples:
+            num_validation_examples = round(num_examples * data_split[1]) if num_training_examples else None
+        if not num_testing_examples:
+            num_testing_examples = round(num_examples * data_split[2]) if num_training_examples else None
+
+        dataset = DatasetSegmentation(
+            images_folder=images_folder,
+            segmentations_folder=segmentations_folder,
+            image_size=self.image_size,
+            num_examples=num_examples,
+            augment_horizontal_flip=self.augment_horizontal_flip,
+            convert_image_to=self.convert_image_to
+        )
+        if validation_images_folder and validation_segmentations_folder:
+            self.ds = dataset
+            self.valid_ds = DatasetSegmentation(
+                images_folder=validation_images_folder,
+                segmentations_folder=validation_segmentations_folder,
+                image_size=self.image_size,
+                num_examples=num_validation_examples,
+                augment_horizontal_flip=self.augment_horizontal_flip,
+                convert_image_to=self.convert_image_to
+            )
+            self.test_ds = None
+            if testing_images_folder and testing_segmentations_folder:        
+                self.test_ds = DatasetSegmentation(
+                    images_folder=testing_images_folder,
+                    segmentations_folder=testing_segmentations_folder,
+                    image_size=self.image_size,
+                    num_examples=num_testing_examples,
+                    augment_horizontal_flip=self.augment_horizontal_flip,
+                    convert_image_to=self.convert_image_to
+                )
+        else:
+            generator = torch.Generator().manual_seed(seed)
+            self.ds, self.valid_ds, self.test_ds = random_split(
+                dataset,
+                lengths=split_int_in_propotions(len(dataset), data_split),
+                generator=generator
+            )
+
+        valid_dl = DataLoader(
+            self.valid_ds,
+            batch_size=self.batch_size,
+            shuffle=True,
+            pin_memory=True,
+            num_workers=cpu_count())
+
+        valid_dl = self.accelerator.prepare(valid_dl)
+        self.valid_dl = cycle(valid_dl)
+        self.test_dl = None
+
+        if epochs:
+            self.train_num_steps = (len(self.ds) * epochs) // self.batch_size
+            self.validate_every = round((validate_every / epochs) * self.train_num_steps)
+            self.save_every = round((save_every / epochs) * self.train_num_steps)
+
+    @torch.no_grad()
+    def validate_or_sample(self):
+        if self.step != 0 and self.step % self.validate_every == 0:
+            validation_set_length = len(self.valid_ds)
+            validation_steps = ceil(validation_set_length / self.batch_size)
+
+            self.accelerator.print(f"Validation step {self.step // self.validate_every}...")
+            self.ema.ema_model.eval()
+            device = self.accelerator.device
+
+            total_loss = 0.0
+            for batch_num in tqdm(range(validation_steps), desc="Validation progress:"):
+                data = next(self.valid_dl).to(device)
+
+                with self.accelerator.autocast():
+                    loss = self.model(data)
+                    loss = loss / validation_steps
+                    total_loss += loss.item()
+
+                imgs, gt_segm = torch.unbind(data, dim=1)
+
+                self.infer_batch(
+                    batch=imgs,
+                    results_folder=self.results_folder / VALIDATION_FOLDER / GENERATED_FOLDER / f"epoch_{self.step}",
+                    ground_truths_folder=self.results_folder / VALIDATION_FOLDER / GT_FOLDER if not self.has_already_validated else None,
+                    original_image_folder=self.results_folder / VALIDATION_FOLDER / IMAGE_FOLDER if not self.has_already_validated else None,
+                    ground_truth_segmentation=gt_segm,
+                    start_ind=batch_num * self.batch_size,
+                    eval_metrics=tuple(),
+                    is_first_batch=batch_num == 0
+                )
+
+            self.accelerator.print(f'Validation loss: {total_loss:.4f}')
+            self.validation_loss_dict[self.step] = total_loss
+            self.has_already_validated = True
+
+    @torch.no_grad()
+    def test(self, test_ds = None, results_folder = None, eval_metrics = tuple(), test_steps = None):
+        if test_ds or not self.test_dl:
+            test_ds = test_ds or self.test_ds
+            test_dl = DataLoader(
+                test_ds,
+                batch_size=self.batch_size,
+                shuffle=True,
+                pin_memory=True,
+                num_workers=cpu_count())
+
+            test_dl = self.accelerator.prepare(test_dl)
+            self.test_dl = cycle(test_dl)
+
+        test_set_length = len(test_ds)
+        test_steps = test_steps or ceil(test_set_length / self.batch_size)
+
+        results_folder = results_folder or self.results_folder
+
+        self.accelerator.print(f"Testing...")
+        eval_results = DataFrame()
+        device = self.accelerator.device
+        for batch_num in tqdm(range(test_steps), desc = "Testing progress:"):
+            data = next(self.test_dl).to(device)
+            imgs, gt_segm = torch.unbind(data, dim=1)
+
+            eval_results = eval_results.append(
+                self.infer_batch(
+                    batch=imgs,
+                    results_folder=results_folder / TESTING_FOLDER / GENERATED_FOLDER,
+                    ground_truths_folder=results_folder / TESTING_FOLDER / GT_FOLDER,
+                    original_image_folder=results_folder / TESTING_FOLDER / IMAGE_FOLDER,
+                    ground_truth_segmentation=gt_segm,
+                    start_ind=batch_num * self.batch_size,
+                    eval_metrics=eval_metrics or self.eval_metrics,
+                    is_first_batch=batch_num == 0
+                )
+            )
+
+        eval_results.to_csv(results_folder / TESTING_FOLDER / RESULTS_FILE)
+        self.accelerator.print(f"Mean results: \n{eval_results.mean(numeric_only=True)}")
+
+    @torch.no_grad()
+    def infer_batch(
+        self,
+        batch,
+        ground_truth_segmentation = None,
+        results_folder = None,
+        ground_truths_folder = None,
+        original_image_folder = None,
+        threshold = 0.5,
+        start_ind = 0,
+        eval_metrics = EVAL_FUNCTIONS.keys(),
+        is_first_batch = False
+    ):
+        results_folder = results_folder or self.results_folder
+        results_folder.mkdir(exist_ok=True, parents=True)
+        if ground_truths_folder:
+            ground_truths_folder.mkdir(exist_ok=True, parents=True)
+        if original_image_folder:
+            original_image_folder.mkdir(exist_ok=True, parents=True)
+
+        pred_segmentations = self.ema.ema_model.sample(batch_size=batch.shape[0], imgs=batch)
+        imgs_list = list(torch.unbind(batch))
+        segm_list = list(torch.unbind(pred_segmentations))
+        gt_list = list(torch.unbind(ground_truth_segmentation)) if ground_truth_segmentation is not None \
+            else [None] * len(imgs_list)
+
+        eval_results = DataFrame()
+        for ind, (image, segmentation, ground_truth) in enumerate(zip(imgs_list, segm_list, gt_list)):
+            segmentation_filename = results_folder / f"sample_{start_ind + ind}.png"
+            ground_truth_filename = None
+            original_image_filename = None
+            if is_first_batch or not self.only_save_first_batch:
+                if ground_truths_folder and ground_truth is not None:
+                    ground_truth_filename = ground_truths_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        ground_truth,
+                        ground_truth_filename)
+
+                if original_image_folder:
+                    original_image_filename = original_image_folder / f"sample_{start_ind + ind}.png"
+                    utils.save_image(
+                        image,
+                        original_image_filename)
+
+                utils.save_image(
+                    segmentation,
+                    segmentation_filename)  
+
+            if eval_metrics and ground_truth_segmentation is not None:
+                image_info = {
+                    "predicted_segmentation": segmentation_filename,
+                    "ground_truth_segmentation": ground_truth_filename,
+                    "original_image": original_image_filename
+                }
+                eval_results = eval_results.append(
+                    self.evaluate(
+                        predicted=segmentation,
+                        ground_truth=ground_truth,
+                        image_info=image_info,
+                        metrics=eval_metrics,
+                        index=ind,
+                        threshold=threshold
+                    )
+                )
+
+        return eval_results
+
+    @torch.no_grad()
+    def infer_folder(
+        self,
+        folder_path,
+        results_path,
+        image_size = None,
+        batch_size = None,
+        exts = ['jpg', 'jpeg', 'png', 'tiff', 'tif']
+    ):
+        results_path = Path(results_path)
+        results_path.mkdir(exist_ok=True, parents=True)
+
+        batch_size = batch_size or self.batch_size
+
+        dataset = Dataset(folder_path, image_size or self.image_size, exts)
+        data_loader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            pin_memory=True,
+            num_workers=cpu_count())
+
+        data_loader = self.accelerator.prepare(data_loader)
+        data_loader = cycle(data_loader)
+
+        total_batches = ceil(len(dataset) / batch_size)
+        for batch_num in tqdm(range(total_batches), desc=f"Total number of batches: {total_batches}"):
+            batch = next(data_loader).to(self.accelerator.device)
+            
+            self.infer_batch(
+                batch,
+                results_folder=results_path / GENERATED_FOLDER,
+                original_image_folder=results_path / IMAGE_FOLDER,
+                eval_metrics = tuple()
+            )
+
+    @torch.no_grad()
+    def infer_image(self, image_path, results_path):
+        image = Image.open(image_path)
+        transform = T.Compose([
+            T.Resize(self.image_size),
+            T.CenterCrop(self.image_size),
+            T.ToTensor()
+        ])
+        image = torch.unsqueeze(transform(image), dim=0).to(self.accelerator.device)
+
+        segmentation = self.ema.ema_model.sample(batch_size=1, imgs=image)
+        utils.save_image(segmentation, results_path)
+
+    @staticmethod
+    @torch.no_grad()
+    def evaluate(
+        predicted,
+        ground_truth,
+        image_info,
+        metrics = EVAL_FUNCTIONS.keys(),
+        index = 0,
+        threshold = 0.5
+    ):
+        predicted = torch.unsqueeze(predicted, dim=0)
+        ground_truth = torch.unsqueeze(ground_truth, dim=0)
+
+        eval_dict = {key: value for (key, value) in image_info.items() if value}
+        for metric in metrics:
+            try:
+                eval_dict[metric] = EVAL_FUNCTIONS[metric](predicted, ground_truth, threshold=threshold)
+            except KeyError:
+                raise ValueError(
+                    f"Metric {metric} is not a valid metric. Options are: {EVAL_FUNCTIONS.keys()}")
+
+        return DataFrame(eval_dict, index=[index])

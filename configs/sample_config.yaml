@@ -1,0 +1,46 @@
+images_folder: /path/to/images/folder
+segmentation_folder: /path/to/segmentation/folder
+results_folder: /path/to/results/folder
+
+dim: 64
+dim_mults: [1, 2, 4, 8]
+
+image_size: 320
+margin: 1.0
+regularization_margin: 10.0
+regularize_to_white_image: True
+loss_type: regularized_triplet
+timesteps: 1000           
+sampling_timesteps: 100
+noising_timesteps: null
+is_loss_time_dependent: False
+
+optimizer: adam
+adam_betas: [0.9, 0.99]
+lr_decay: 0
+weight_decay: 0
+rms_prop_alpha: 0.99
+momentum: 0
+etas: [0.5, 1.2]
+step_sizes: [0.000001, 50]
+
+validate_every: 2000
+save_every: 2000
+load_milestone: 0
+data_split: [0.8, 0.1, 0.1]
+num_samples: 25
+# Set num_training_examples to null if you want to use the full dataset. If not, you can specify
+# how many training examples are to be used
+num_training_examples: null 
+# Set epochs to null if you are not interested in the number of epochs. If so, the model will train for as 
+# many iterations as you specified in train_num_steps. Else, it will calculate the number of iterations based on
+# the number of epochs 
+
+# IMPORTANT! If epochs is not null, save_every and validate_every are with respect to the epochs, not the training
+# iterations.
+epochs: null 
+train_batch_size: 4
+train_lr: 0.00008
+train_num_steps: 100000    
+gradient_accumulate_every: 2
+ema_decay: 0.995

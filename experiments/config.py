@@ -1,0 +1,185 @@
+from typing import Tuple, Union, Optional, List
+from pathlib import Path
+from dataclasses import dataclass, fields, _MISSING_TYPE
+from copy import deepcopy
+
+from itertools import product
+import numpy as np
+
+
+PathLike = Union[str, Path]
+
+DEFAULT_K_FOLD = 5
+
+
+def str_list_to_appropriate_type(str_list: List[str]) -> Union[int, float]:
+    return [float(el) if ("." in el or "e" in el) else int(el) for el in str_list]
+
+
+@dataclass
+class KFoldConfig:
+    training_images_folders: List[PathLike]
+    training_segmentation_folders: List[PathLike]
+    testing_images_folder: Union[PathLike, List[PathLike]]
+    testing_segmentation_folder: Union[PathLike, List[PathLike]]
+
+    k: int = DEFAULT_K_FOLD
+
+    def __post_init__(self):
+        if isinstance(self.training_images_folders, str):
+            self.training_images_folders = Path(self.training_images_folders)
+        else:
+            self.training_images_folders = [Path(path) for path in self.training_images_folders]
+
+        if isinstance(self.training_segmentation_folders, str):
+            self.training_segmentation_folders = Path(self.training_segmentation_folders)
+        else:
+            self.training_segmentation_folders = [Path(path) for path in self.training_segmentation_folders]
+
+        if isinstance(self.testing_images_folder, str):
+            self.testing_images_folder = Path(self.testing_images_folder)
+        else:
+            self.testing_images_folder = [Path(path) for path in self.testing_images_folder]
+
+        if isinstance(self.testing_segmentation_folder, str):
+            self.testing_segmentation_folder = Path(self.testing_segmentation_folder)
+        else:
+            self.testing_segmentation_folder = [Path(path) for path in self.testing_segmentation_folder]
+
+        self.k = self.k or DEFAULT_K_FOLD
+
+
+@dataclass
+class SamplingConfig:
+    load_milestone: Union[str, List[int]]
+
+    sampling_timesteps: Union[str, List[int]]
+    noising_timesteps: Union[str, List[int]]
+    ddim_sampling_eta: Union[str, List[float]]
+
+    def __post_init__(self):
+        for field in fields(self):
+            field_value = getattr(self, field.name)
+            if type(field_value) == str:
+                try:
+                    start, stop, step = str_list_to_appropriate_type(field_value.split(":"))
+                    value_as_list = list(np.arange(start, stop, step))
+                    setattr(self, field.name, value_as_list)
+                except AttributeError:
+                    assert print(
+                        f"{field.name} must be either a list of possible values or follow the format of start:end:step if it is an interval"
+                    )
+
+
+@dataclass
+class TrainingConfig:
+    images_folder: Union[PathLike, List[PathLike]]
+    segmentation_folder: Union[PathLike, List[PathLike]]
+    results_folder: Union[PathLike, List[PathLike]]
+    validation_images_folder: Union[PathLike, List[PathLike]] = None
+    validation_segmentations_folder: Union[PathLike, List[PathLike]] = None
+    testing_images_folder: Union[PathLike, List[PathLike]] = None
+    testing_segmentations_folder: Union[PathLike, List[PathLike]] = None
+
+    dim: int = 64
+    dim_mults: Tuple[int, int, int, int] = (1, 2, 4, 8)
+
+    image_size: int = 320
+    margin: float = 1.0
+    regularization_margin: float = 10.0
+    regularize_to_white_image: bool = True
+    loss_type: str = "regularized_triplet"
+    timesteps: int = 1000           
+    sampling_timesteps: int = 100
+    noising_timesteps: Optional[int] = None
+    ddim_sampling_eta: float = 0.0
+    p2_loss_weight_gamma: float = 1.
+    p2_loss_weight_k: int = 1
+    is_loss_time_dependent: bool = False
+
+    optimizer: str = "adam"
+    adam_betas: Tuple[float, float] = (0.9, 0.99)
+    lr_decay: float = 0
+    weight_decay: float = 0
+    rms_prop_alpha: float = 0.99
+    momentum: float = 0
+    etas: Tuple[float, float] = (0.5, 1.2)
+    step_sizes: Tuple[float, float] = (1e-06, 50)
+
+    validate_every: int = 2000
+    save_every: int = 2000
+    load_milestone: int = 1
+    data_split: Tuple[float, float, float] = (0.8, 0.1, 0.1)
+    num_samples: int = 25
+    num_training_examples: Optional[int] = None
+    train_batch_size: int = 8
+    train_lr: float = 8e-5
+    train_num_steps: int = 100000
+    epochs: Optional[int] = None    
+    gradient_accumulate_every: int = 2
+    ema_decay: float = 0.995
+
+    experiments_results_folder: Optional[Union[PathLike, List[PathLike]]] = None
+
+    def __post_init__(self):
+        # Loop through the fields
+        for field in fields(self):
+            # If there is a default and the value of the field is none we can assign a value
+            if not isinstance(field.default, _MISSING_TYPE) and getattr(self, field.name) is None:
+                setattr(self, field.name, field.default)
+
+        if isinstance(self.images_folder, str):
+            self.images_folder = Path(self.images_folder)
+        else:
+            self.images_folder = [Path(path) for path in self.images_folder]
+
+        if isinstance(self.segmentation_folder, str):
+            self.segmentation_folder = Path(self.segmentation_folder)
+        else:
+            self.segmentation_folder = [Path(path) for path in self.segmentation_folder]
+
+        self.results_folder = Path(self.results_folder)
+
+    def generate_sampling_configs(self, sampling_config):
+        sampling_configurations = product(
+            sampling_config.sampling_timesteps,
+            sampling_config.noising_timesteps,
+            sampling_config.ddim_sampling_eta,
+            sampling_config.load_milestone    
+        )
+
+        training_configs = []
+        for sampling_timesteps, noising_timesteps, ddim_sampling_eta, load_milestone in sampling_configurations:
+            new_config = deepcopy(self)
+
+            new_config.sampling_timesteps = sampling_timesteps
+            new_config.noising_timesteps = noising_timesteps
+            new_config.ddim_sampling_eta = ddim_sampling_eta
+            new_config.load_milestone = load_milestone
+
+            name_experiment = f"testing_m={load_milestone}_st={sampling_timesteps}_nt={noising_timesteps}_eta={ddim_sampling_eta}"
+            new_config.experiments_results_folder = self.results_folder / name_experiment
+
+            training_configs.append(new_config)
+
+        return training_configs
+
+    def generate_k_fold_configs(self, k_fold_config):
+        assert len(k_fold_config.training_images_folders) == len(k_fold_config.training_segmentation_folders), \
+            "The image and segmentations folders must be of the same length"
+        assert not len(k_fold_config.training_images_folders) % k_fold_config.k, \
+            f"The number of folders must be divisible by k, in this case {k_fold_config.k}"
+
+        training_configs = []
+        for fold_num in range(k_fold_config.k):
+            new_config = deepcopy(self)
+
+            new_config.results_folder = self.results_folder / f"fold_{fold_num}"
+            new_config.images_folder = k_fold_config.training_images_folders[:fold_num] + k_fold_config.training_images_folders[fold_num + 1:]
+            new_config.segmentation_folder = k_fold_config.training_segmentation_folders[:fold_num] + k_fold_config.training_segmentation_folders[fold_num + 1:]
+            new_config.validation_images_folder = k_fold_config.training_images_folders[fold_num]
+            new_config.validation_segmentations_folder = k_fold_config.training_segmentation_folders[fold_num]
+
+            training_configs.append(new_config)
+
+        return training_configs

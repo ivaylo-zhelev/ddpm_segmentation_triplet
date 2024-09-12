@@ -16,10 +16,17 @@ setup(
   ],
   install_requires=[
     'accelerate',
+    'dataclasses',
     'einops',
     'ema-pytorch',
+    'importlib_metadata',
+    'matplotlib',
+    'packaging',
+    'pandas',
     'pillow',
+    'ruamel.yaml',
     'torch',
+    'torchmetrics==0.8.2',
     'torchvision',
     'tqdm'
   ],

@@ -1,0 +1,5 @@
+load_milestone: [5]
+
+sampling_timesteps: "10:60:10"
+noising_timesteps: "10:40:5"
+ddim_sampling_eta: "0.0:0.3:0.05"
